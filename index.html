@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>АвтоЕсть — калькулятор доставки (Copart / IAAI)</title>
+<style>
+:root{--text:#111827;--muted:#6b7280;--line:#e5e7eb;--accent:#2563eb}
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto; font-size:14px; line-height:1.15; color:#111827;}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 18px}
+h1{margin:0 0 14px;font-size:34px;font-weight:900}
+.topbar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:10px 14px;background:#fff;font-size:16px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 16px;font-weight:900;cursor:pointer;font-size:16px}
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+@media (max-width:980px){.wrap{overflow-x:auto}.layout{grid-template-columns:520px 520px}}
+.card{padding:14px}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.label{font-size:12px;margin-bottom:2px}
+.ctrl{padding:8px 10px;font-size:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+@media (max-width:560px){.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}}
+.check{display:flex;align-items:center;gap:10px;font-size:16px}
+.check input{width:18px;height:18px}
+.sectionTitle{font-size:14px;margin:8px 0 6px}
+.underline{height:3px;background:var(--accent);margin:4px 0 6px}
+.rrow{display:flex;justify-content:space-between;gap:8px;padding:4px 0}
+.rrow span:last-child{font-size:14px;font-weight:600}
+.total{padding-top:14px;margin-top:14px;border-top:1px solid var(--line);font-size:22px}
+.muted{color:var(--muted);font-size:14px;line-height:1.4}
+.warn{background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;border-radius:12px;padding:10px 12px;font-weight:800;margin-top:10px}
+.ok{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:12px;padding:10px 12px;font-weight:800;margin-top:10px}
+
+
+/* AutoYest compact left */
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.label{font-size:12px;margin-bottom:2px}
+.ctrl{padding:8px 10px;font-size:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+.check{margin:6px 0 0}
+
+.resultsCard{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+@media (max-width:980px){.wrap{overflow-x:auto}.layout{grid-template-columns:520px 520px}}
+
+
+.markupControl{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.markupControl .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.markupControl label{font-weight:800}
+.markupControl input[type="number"]{width:90px;padding:8px 10px;font-size:14px;border:1px solid var(--line);border-radius:10px}
+.markupControl input[type="range"]{width:260px}
+.markupHint{color:var(--muted);font-size:13px;line-height:1.35}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <h1>AutoYest · калькулятор авто</h1>
+<h1 style="display:none">Калькулятор доставки (COPART / IAAI)</h1>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <div class="pill"><b><span id="pillRoute">Клайпеда</span></b></div>
+      <button class="btn" id="copyBtn">Скопировать для клиента</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="card">
+      <div class="field">
+        <div class="label">Тип транспорта</div>
+        <select class="ctrl" id="vehicle">
+          <option value="SEDAN" selected>Седан</option>
+          <option value="SUV">Кроссовер / SUV</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <div class="label">Стоимость авто, $</div>
+        <input class="ctrl" id="lot" inputmode="numeric" value="3000"/>
+      </div>
+
+      <div class="field">
+        <div class="label">Аукцион</div>
+        <select class="ctrl" id="auction">
+          <option value="COPART" selected>Copart</option>
+          <option value="IAAI">IAAI</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="check"><input type="checkbox" id="isEv">Электро / гибрид</label>
+        <label class="check"><input type="checkbox" id="isOffsite">Offsite (+80 $)</label>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <div class="label">Порт назначения</div>
+          <select class="ctrl" id="destPort">
+            <option value="KLAIPEDA" selected>Клайпеда</option>
+            <option value="POTI">Поти</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <div class="label">Локация (площадка)</div>
+          <select class="ctrl" id="location">
+<option value="ABILENE" selected>ABILENE</option>
+<option value="ACE-CARSON">ACE-CARSON</option>
+<option value="ACE-PERRIS">ACE-PERRIS</option>
+<option value="ADAMSBURG">ADAMSBURG</option>
+<option value="ADESABOSTON">ADESABOSTON</option>
+<option value="ADESAGREATLAKES">ADESAGREATLAKES</option>
+<option value="ADESANEWJERSEY">ADESANEWJERSEY</option>
+<option value="ADESAPA">ADESAPA</option>
+<option value="ADESASIOUXFALLS">ADESASIOUXFALLS</option>
+<option value="ADESAWISCONSIN">ADESAWISCONSIN</option>
+<option value="AKRON-CANTON">AKRON-CANTON</option>
+<option value="ALBANY">ALBANY</option>
+<option value="ALBUQUERQUE">ALBUQUERQUE</option>
+<option value="ALTOONA">ALTOONA</option>
+<option value="AMARILLO">AMARILLO</option>
+<option value="ANAHEIM">ANAHEIM</option>
+<option value="ANCHORAGE">ANCHORAGE</option>
+<option value="ANDREWS">ANDREWS</option>
+<option value="ANTELOPE">ANTELOPE</option>
+<option value="APPLETON">APPLETON</option>
+<option value="ARIZONAAUTOAUCTION">ARIZONAAUTOAUCTION</option>
+<option value="ASHEVILLE">ASHEVILLE</option>
+<option value="ASHLAND">ASHLAND</option>
+<option value="ATLANTAAUTOAUCTION">ATLANTAAUTOAUCTION</option>
+<option value="ATLANTAEAST">ATLANTAEAST</option>
+<option value="ATLANTANORTH">ATLANTANORTH</option>
+<option value="ATLANTASOUTH">ATLANTASOUTH</option>
+<option value="ATLANTAWEST">ATLANTAWEST</option>
+<option value="AUGUSTA">AUGUSTA</option>
+<option value="AUSTIN">AUSTIN</option>
+<option value="AVENELNEWJERSEY">AVENELNEWJERSEY</option>
+<option value="BAKERSFIELD">BAKERSFIELD</option>
+<option value="BALTIMOR">BALTIMOR</option>
+<option value="BANGOR">BANGOR</option>
+<option value="BATONROUGE">BATONROUGE</option>
+<option value="BAYAREA">BAYAREA</option>
+<option value="BEL-AIRAUTOAUCTION">BEL-AIRAUTOAUCTION</option>
+<option value="BILLINGS">BILLINGS</option>
+<option value="BIRMINGHAM">BIRMINGHAM</option>
+<option value="BOISE">BOISE</option>
+<option value="BOSTON">BOSTON</option>
+<option value="BOSTON-SHIRLEY">BOSTON-SHIRLEY</option>
+<option value="BOWLIMGGREEN">BOWLIMGGREEN</option>
+<option value="BRIDGEPORT">BRIDGEPORT</option>
+<option value="BRIDGEVIEW">BRIDGEVIEW</option>
+<option value="BUCKHANNON">BUCKHANNON</option>
+<option value="BUFFALO">BUFFALO</option>
+<option value="BURLINGTON">BURLINGTON</option>
+<option value="CANDIA">CANDIA</option>
+<option value="CARTERSVILLE">CARTERSVILLE</option>
+<option value="CASPER">CASPER</option>
+<option value="CENTRALAUTOAUCTION">CENTRALAUTOAUCTION</option>
+<option value="CENTRALNEWJERSEY">CENTRALNEWJERSEY</option>
+<option value="CHAMBERSBURG">CHAMBERSBURG</option>
+<option value="CHARLESTON-SC">CHARLESTON-SC</option>
+<option value="CHARLESTON-WV">CHARLESTON-WV</option>
+<option value="CHARLOTTE">CHARLOTTE</option>
+<option value="CHATTANOOGA">CHATTANOOGA</option>
+<option value="CHICAGONORTH">CHICAGONORTH</option>
+<option value="CHICAGOSOUTH">CHICAGOSOUTH</option>
+<option value="CHICAGOWEST">CHICAGOWEST</option>
+<option value="CHINAGROVE">CHINAGROVE</option>
+<option value="CICERO">CICERO</option>
+<option value="CINCINNATI">CINCINNATI</option>
+<option value="CLAYTON">CLAYTON</option>
+<option value="CLEARWATER">CLEARWATER</option>
+<option value="CLEVELAND">CLEVELAND</option>
+<option value="CLEVELANDEAST">CLEVELANDEAST</option>
+<option value="CLEVELANDWEST">CLEVELANDWEST</option>
+<option value="CLINTON">CLINTON</option>
+<option value="COLORADOSPRINGS">COLORADOSPRINGS</option>
+<option value="COLUMBIAMO">COLUMBIAMO</option>
+<option value="COLUMBIASC">COLUMBIASC</option>
+<option value="COLUMBUSAL">COLUMBUSAL</option>
+<option value="COLUMBUSOH">COLUMBUSOH</option>
+<option value="CONCORD">CONCORD</option>
+<option value="CORPUSCHRISTI">CORPUSCHRISTI</option>
+<option value="CULPEPER,VA">CULPEPER,VA</option>
+<option value="DALLAS">DALLAS</option>
+<option value="DALLASSOUTH">DALLASSOUTH</option>
+<option value="DANVILLE">DANVILLE</option>
+<option value="DAVENPORT">DAVENPORT</option>
+<option value="DAYTON">DAYTON</option>
+<option value="DEFUNIAKSPRINGS">DEFUNIAKSPRINGS</option>
+<option value="DENVER">DENVER</option>
+<option value="DENVERSOUTH">DENVERSOUTH</option>
+<option value="DESMOINES">DESMOINES</option>
+<option value="DETROIT">DETROIT</option>
+<option value="DOTHAN">DOTHAN</option>
+<option value="DUNDALK">DUNDALK</option>
+<option value="DYER">DYER</option>
+<option value="EARLINGTON">EARLINGTON</option>
+<option value="EASTBAY">EASTBAY</option>
+<option value="EASTNC">EASTNC</option>
+<option value="ELDRIDGE">ELDRIDGE</option>
+<option value="ELPASO">ELPASO</option>
+<option value="ENGLISHTOWN">ENGLISHTOWN</option>
+<option value="ERIE">ERIE</option>
+<option value="ESSEX">ESSEX</option>
+<option value="EUGENE">EUGENE</option>
+<option value="EXETER">EXETER</option>
+<option value="FARGO">FARGO</option>
+<option value="FAYETTEVILLE">FAYETTEVILLE</option>
+<option value="FLINT">FLINT</option>
+<option value="FLORENCE">FLORENCE</option>
+<option value="FONTANA">FONTANA</option>
+<option value="FORTMYERS">FORTMYERS</option>
+<option value="FORTWAYNE">FORTWAYNE</option>
+<option value="FORTWORTHNORTH">FORTWORTHNORTH</option>
+<option value="FOUROAKS,NC">FOUROAKS,NC</option>
+<option value="FREDERICKSBURG-SOUTH">FREDERICKSBURG-SOUTH</option>
+<option value="FREETOWN">FREETOWN</option>
+<option value="FREMONT">FREMONT</option>
+<option value="FRESNO">FRESNO</option>
+<option value="FT.LAUDERDALE">FT.LAUDERDALE</option>
+<option value="FT.PIERCE">FT.PIERCE</option>
+<option value="FT.WORTH">FT.WORTH</option>
+<option value="GLASSBOROEAST">GLASSBOROEAST</option>
+<option value="GLASSBOROWEST">GLASSBOROWEST</option>
+<option value="GOLDENGATE">GOLDENGATE</option>
+<option value="GR.RAPIDS">GR.RAPIDS</option>
+<option value="GRAHAM">GRAHAM</option>
+<option value="GRANDISLAND">GRANDISLAND</option>
+<option value="GRANTVILLE">GRANTVILLE</option>
+<option value="GREATERAUTOAUCTIONPHOENIX">GREATERAUTOAUCTIONPHOENIX</option>
+<option value="GREENSBORO">GREENSBORO</option>
+<option value="GREENVILLE">GREENVILLE</option>
+<option value="GREER">GREER</option>
+<option value="GRENADA">GRENADA</option>
+<option value="GULFCOAST">GULFCOAST</option>
+<option value="GULFPORT">GULFPORT</option>
+<option value="HAMMOND">HAMMOND</option>
+<option value="HAMPTON,VA">HAMPTON,VA</option>
+<option value="HARRISBURG">HARRISBURG</option>
+<option value="HARRISONBURGAUTOAUCTION">HARRISONBURGAUTOAUCTION</option>
+<option value="HARTFORD">HARTFORD</option>
+<option value="HARTFORD-SOUTH">HARTFORD-SOUTH</option>
+<option value="HARTFORDCITY">HARTFORDCITY</option>
+<option value="HATWARD">HATWARD</option>
+<option value="HAYWARD">HAYWARD</option>
+<option value="HELENA">HELENA</option>
+<option value="HIGHDESERT">HIGHDESERT</option>
+<option value="HONOLULU">HONOLULU</option>
+<option value="HOUSTON">HOUSTON</option>
+<option value="HOUSTON-NORTH">HOUSTON-NORTH</option>
+<option value="HOUSTONEAST">HOUSTONEAST</option>
+<option value="HUNTSVILLE">HUNTSVILLE</option>
+<option value="INDIANAPOLIS">INDIANAPOLIS</option>
+<option value="IONIA">IONIA</option>
+<option value="JACKSON">JACKSON</option>
+<option value="JACKSONVILLE">JACKSONVILLE</option>
+<option value="JACKSONVILLEEAST">JACKSONVILLEEAST</option>
+<option value="JACKSONVILLEWEST">JACKSONVILLEWEST</option>
+<option value="KANSASCITY">KANSASCITY</option>
+<option value="KINCHELOE">KINCHELOE</option>
+<option value="KNOXVILLE">KNOXVILLE</option>
+<option value="LAFAYETTE">LAFAYETTE</option>
+<option value="LANSING">LANSING</option>
+<option value="LASVEGAS">LASVEGAS</option>
+<option value="LAUREL">LAUREL</option>
+<option value="LEXINGTONEASTKY">LEXINGTONEASTKY</option>
+<option value="LEXINGTONSC">LEXINGTONSC</option>
+<option value="LEXINGTONWESTKY">LEXINGTONWESTKY</option>
+<option value="LINCOLN,IL">LINCOLN,IL</option>
+<option value="LINCOLN,NE">LINCOLN,NE</option>
+<option value="LITTLEROCK">LITTLEROCK</option>
+<option value="LONGBEACH">LONGBEACH</option>
+<option value="LONGISLAND">LONGISLAND</option>
+<option value="LONGVIEW">LONGVIEW</option>
+<option value="LOSANGELES">LOSANGELES</option>
+<option value="LOSANGELES-ADESA">LOSANGELES-ADESA</option>
+<option value="LOUISVILLE">LOUISVILLE</option>
+<option value="LUBBOCK">LUBBOCK</option>
+<option value="LUFKIN">LUFKIN</option>
+<option value="LUMBERTON">LUMBERTON</option>
+<option value="LYMAN">LYMAN</option>
+<option value="MACON">MACON</option>
+<option value="MADISON">MADISON</option>
+<option value="MADISONHEIGHTS">MADISONHEIGHTS</option>
+<option value="MADISONSOUTH">MADISONSOUTH</option>
+<option value="MANCHESTER">MANCHESTER</option>
+<option value="MARTINEZ">MARTINEZ</option>
+<option value="MCALLEN">MCALLEN</option>
+<option value="MEBANE">MEBANE</option>
+<option value="MEMPHIS">MEMPHIS</option>
+<option value="MENTONE">MENTONE</option>
+<option value="METRODC">METRODC</option>
+<option value="MIAMI">MIAMI</option>
+<option value="MIAMICENTRAL">MIAMICENTRAL</option>
+<option value="MIAMINORTH">MIAMINORTH</option>
+<option value="MIAMISOUTH">MIAMISOUTH</option>
+<option value="MIDDLETOWN">MIDDLETOWN</option>
+<option value="MILWAUKEE">MILWAUKEE</option>
+<option value="MINNEAPOLIS">MINNEAPOLIS</option>
+<option value="MINNEAPOLIS/ST.PAUL">MINNEAPOLIS/ST.PAUL</option>
+<option value="MINNEAPOLISNORTH">MINNEAPOLISNORTH</option>
+<option value="MISSOULA">MISSOULA</option>
+<option value="MOBILE">MOBILE</option>
+<option value="MOCKSVILLE">MOCKSVILLE</option>
+<option value="MONTGOMERY">MONTGOMERY</option>
+<option value="NAPA">NAPA</option>
+<option value="NASHVILLE">NASHVILLE</option>
+<option value="NATIONALAUTODEALERSEXCHANGE">NATIONALAUTODEALERSEXCHANGE</option>
+<option value="NEWBURGH">NEWBURGH</option>
+<option value="NEWCASTLE">NEWCASTLE</option>
+<option value="NEWORLEANS">NEWORLEANS</option>
+<option value="NORTHBOSTON">NORTHBOSTON</option>
+<option value="NORTHCHARLESTON-SC">NORTHCHARLESTON-SC</option>
+<option value="NORTHERNNEWJERSEY">NORTHERNNEWJERSEY</option>
+<option value="NORTHERNVIRGINIA">NORTHERNVIRGINIA</option>
+<option value="NORTHHOLLYWOOD">NORTHHOLLYWOOD</option>
+<option value="NORTHSEATTLE">NORTHSEATTLE</option>
+<option value="OCALA">OCALA</option>
+<option value="OGDEN">OGDEN</option>
+<option value="OKLAHOMACITY">OKLAHOMACITY</option>
+<option value="OMAHA">OMAHA</option>
+<option value="ORLANDO">ORLANDO</option>
+<option value="ORLANDONORTH">ORLANDONORTH</option>
+<option value="ORLANDOSOUTH">ORLANDOSOUTH</option>
+<option value="PADUCAH">PADUCAH</option>
+<option value="PASCO">PASCO</option>
+<option value="PENSACOLA">PENSACOLA</option>
+<option value="PEORIA">PEORIA</option>
+<option value="PERMIANBASIN">PERMIANBASIN</option>
+<option value="PHILADELPHIA">PHILADELPHIA</option>
+<option value="PHILADELPHIAEAST">PHILADELPHIAEAST</option>
+<option value="PHOENIX">PHOENIX</option>
+<option value="PITTSBURG">PITTSBURG</option>
+<option value="PITTSBURGHNORTH">PITTSBURGHNORTH</option>
+<option value="PITTSBURGHSOUTH">PITTSBURGHSOUTH</option>
+<option value="PORTAGE">PORTAGE</option>
+<option value="PORTLAND">PORTLAND</option>
+<option value="PORTLAND-GORHAM">PORTLAND-GORHAM</option>
+<option value="PORTLANDNORTH">PORTLANDNORTH</option>
+<option value="PORTLANDSOUTH">PORTLANDSOUTH</option>
+<option value="PORTLANDWEST">PORTLANDWEST</option>
+<option value="PROVIDENCE">PROVIDENCE</option>
+<option value="PULASKI">PULASKI</option>
+<option value="PUNTAGORDA">PUNTAGORDA</option>
+<option value="PUYALLUP">PUYALLUP</option>
+<option value="RALEIGH">RALEIGH</option>
+<option value="RANCHOCUCAMONGA">RANCHOCUCAMONGA</option>
+<option value="RAPIDCITY">RAPIDCITY</option>
+<option value="REDDING">REDDING</option>
+<option value="RENO">RENO</option>
+<option value="RICHMOND">RICHMOND</option>
+<option value="RICHMONDEAST">RICHMONDEAST</option>
+<option value="RIVERSIDE">RIVERSIDE</option>
+<option value="ROANOKE">ROANOKE</option>
+<option value="ROCHESTER">ROCHESTER</option>
+<option value="ROSEDALE">ROSEDALE</option>
+<option value="RUTLAND">RUTLAND</option>
+<option value="SACRAMENTO">SACRAMENTO</option>
+<option value="SALISBURY">SALISBURY</option>
+<option value="SALTLAKECITY">SALTLAKECITY</option>
+<option value="SANANTONIO">SANANTONIO</option>
+<option value="SANBERNARDINO">SANBERNARDINO</option>
+<option value="SANDIEGO">SANDIEGO</option>
+<option value="SANJOSE">SANJOSE</option>
+<option value="SANTACLARITA">SANTACLARITA</option>
+<option value="SARASOTA">SARASOTA</option>
+<option value="SAVANNAH">SAVANNAH</option>
+<option value="SAYREVILLE">SAYREVILLE</option>
+<option value="SCRANTON">SCRANTON</option>
+<option value="SEAFORD">SEAFORD</option>
+<option value="SEATTLE">SEATTLE</option>
+<option value="SHADYSPRING,WV">SHADYSPRING,WV</option>
+<option value="SHREVEPORT">SHREVEPORT</option>
+<option value="SIKESTON">SIKESTON</option>
+<option value="SIOUXFALLS">SIOUXFALLS</option>
+<option value="SOMERVILLE">SOMERVILLE</option>
+<option value="SOSACRAMENTO">SOSACRAMENTO</option>
+<option value="SOUTHBEND">SOUTHBEND</option>
+<option value="SOUTHBOSTON">SOUTHBOSTON</option>
+<option value="SOUTHERNILLINOIS">SOUTHERNILLINOIS</option>
+<option value="SOUTHERNNEWJERSEY">SOUTHERNNEWJERSEY</option>
+<option value="SPARTANBURG">SPARTANBURG</option>
+<option value="SPOKANE">SPOKANE</option>
+<option value="SPRINGFIELD">SPRINGFIELD</option>
+<option value="ST.CLOUD">ST.CLOUD</option>
+<option value="ST.LOUIS">ST.LOUIS</option>
+<option value="SUFFOLK">SUFFOLK</option>
+<option value="SUNVALLEY">SUNVALLEY</option>
+<option value="SYRACUSE">SYRACUSE</option>
+<option value="TALLAHASSEE">TALLAHASSEE</option>
+<option value="TAMPA">TAMPA</option>
+<option value="TAMPASOUTH">TAMPASOUTH</option>
+<option value="TANNER">TANNER</option>
+<option value="TAUNTON">TAUNTON</option>
+<option value="TEMPLETON">TEMPLETON</option>
+<option value="TIDEWATER">TIDEWATER</option>
+<option value="TIFTON">TIFTON</option>
+<option value="TRENTON">TRENTON</option>
+<option value="TUCSON">TUCSON</option>
+<option value="TULSA">TULSA</option>
+<option value="VALLEJO">VALLEJO</option>
+<option value="VANNUYS">VANNUYS</option>
+<option value="WACO">WACO</option>
+<option value="WALTON">WALTON</option>
+<option value="WASHINGTONDC">WASHINGTONDC</option>
+<option value="WAYLAND">WAYLAND</option>
+<option value="WEBSTER">WEBSTER</option>
+<option value="WESTERNCOLORADO">WESTERNCOLORADO</option>
+<option value="WESTPALMBEACH">WESTPALMBEACH</option>
+<option value="WESTWARREN">WESTWARREN</option>
+<option value="WHEELING">WHEELING</option>
+<option value="WICHITA">WICHITA</option>
+<option value="WILMINGTON">WILMINGTON</option>
+<option value="WINDHAM">WINDHAM</option>
+<option value="YORKHAVEN">YORKHAVEN</option>
+<option value="YORKSPRINGS">YORKSPRINGS</option>
+</select>
+        </div>
+      </div>
+      <div id="statusOk" class="ok" style="display:none"></div>
+      <div id="statusWarn" class="warn" style="display:none"></div>
+
+      <div class="field">
+        <label class="check"><input type="checkbox" id="toMinsk">Добавить доставку до Минска</label>
+        <div class="muted" style="margin-top:8px">Значения можно менять вручную. Сохраняются в браузере.</div>
+      </div>
+
+      <div class="row2" id="minskInputs" style="display:none">
+        <div class="field" id="minskKWrap">
+          <div class="label">Клайпеда → Минск, €</div>
+          <input class="ctrl" id="minskK" inputmode="numeric"/>
+          <div class="muted" style="margin-top:6px">Курс EUR → USD</div>
+          <input class="ctrl" id="fxEurUsd" inputmode="decimal" value="1.08"/>
+        </div>
+        <div class="field" id="minskPWrap">
+          <div class="label">Поти → Минск, $</div>
+          <input class="ctrl" id="minskP" inputmode="numeric"/>
+        </div>
+      </div>
+      <!-- RB CUSTOMS -->
+
+
+      <div class="divider" style="margin:10px 0"></div>
+        <div class="sectionTitle">Таможня РБ</div>
+
+        <div class="row2">
+          <div class="field">
+            <div class="label">Возраст авто, лет</div>
+            <select class="ctrl" id="rbAge">
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="21">21</option>
+              <option value="22">22</option>
+              <option value="23">23</option>
+              <option value="24">24</option>
+              <option value="25">25</option>
+              <option value="26">26</option>
+              <option value="27">27</option>
+              <option value="28">28</option>
+              <option value="29">29</option>
+              <option value="30">30</option>
+            </select>
+          </div>
+          <div class="field">
+            <div class="label">Тип двигателя</div>
+            <select class="ctrl" id="rbEngine">
+              <option value="PETROL">Бензин</option>
+              <option value="DIESEL">Дизель</option>
+              <option value="EV">Электро</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <div class="label">Объём, см³</div>
+            <input class="ctrl" id="rbCC" inputmode="numeric" value="2000"/>
+          </div>
+          
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <div class="label">Курс USD → BYN</div>
+            <input class="ctrl" id="fxUsdByn" inputmode="decimal" value="2.92"/>
+          </div>
+          <div class="field">
+            <div class="label">Льготная таможня</div>
+            <label class="check"><input type="checkbox" id="rbPrefer">Льгота (−50% пошлина)</label>
+          </div>
+        </div>
+        <input type="hidden" id="rbCustomFeeByn" value="120"/>
+        <input type="hidden" id="rbUtilByn" value="0"/>
+        <input type="hidden" id="rbSvhByn" value="650"/>
+</div>
+
+    <div class="card resultsCard">
+      <div class="sectionTitle">Покупка и доставка</div>
+      <div class="underline"></div>
+
+      <div class="rrow"><span>Стоимость авто</span><span id="rLot">—</span></div>
+      <div class="rrow"><span>Аукционный сбор</span><span id="rAuc">—</span></div>
+      <div class="rrow" id="rOffsiteRow" style="display:none"><span>Offsite</span><span id="rOffsite">—</span></div>
+      <div class="rrow"><span>Услуги компании</span><span id="rService">—</span></div>
+      <div class="rrow"><span>Площадка → порт США</span><span id="rInland">—</span></div>
+      <div class="rrow"><span id="rOceanLabel">Порт → Клайпеда</span><span id="rOcean">—</span></div>
+      <div class="rrow" id="rEvRow" style="display:none"><span>Доплата (Электро / гибрид)</span><span id="rEv">—</span></div>
+      <div class="rrow" id="rMinskRow" style="display:none"><span id="rMinskLabel">—</span><span id="rMinsk">—</span></div>
+      
+
+      <div class="rrow total"><span>ИТОГО</span><span id="rTotal">—</span></div>
+
+      <!-- RB CUSTOMS RESULTS -->
+      <div id="rbResWrap" style="margin-top:16px">
+        <div class="sectionTitle">Таможня РБ</div>
+        <div class="underline"></div>
+
+        <div class="rrow"><span>Таможенная пошлина</span><span id="rRbDuty">—</span></div>
+        <div class="rrow"><span>Таможенный сбор</span><span id="rRbFee">—</span></div>
+        <div class="rrow"><span>Утильсбор</span><span id="rRbUtil">—</span></div>
+        <div class="rrow"><span>Расходы на СВХ</span><span id="rRbSvh">—</span></div>
+
+        <div class="rrow total"><span></span><span id="rRbTotal">—</span></div>
+        <div class="rrow total"><span>ИТОГО (доставка + таможня)</span><span id="rGrand">—</span></div>
+
+        
+      </div>
+      <!-- /RB CUSTOMS RESULTS -->
+
+      
+    </div>
+  </div>
+
+        
+      </div>
+      <!-- /RB CUSTOMS -->
+</div>
+
+    
+
+  </div>
+</div>
+
+
+  <div class="card markupControl">
+    <div class="row">
+      <label for="oceanMarkupPercent">Наценка на морскую доставку:</label>
+      <input id="oceanMarkupPercent" type="number" min="0" max="100" step="1" value="20"/>
+      <span>%</span>
+      <input id="oceanMarkupRange" type="range" min="0" max="100" step="1" value="20"/>
+    </div>
+    <div class="markupHint">Влияет только на строки <b>Порт → Клайпеда</b> и <b>Порт → Поти</b>. Остальные суммы (inland, сборы, услуги) не меняются.</div>
+  </div>
+
+<script>
+const PRICE_DB = {"KLAIPEDA":{"SEDAN":{"ACE-CARSON":{"inland":225,"ocean":1475},"ACE-PERRIS":{"inland":290,"ocean":1475},"ADESABOSTON":{"inland":425,"ocean":775},"ADESAGREATLAKES":{"inland":575,"ocean":775},"ADESANEWJERSEY":{"inland":200,"ocean":775},"ADESASIOUXFALLS":{"inland":600,"ocean":1475},"ADESAWISCONSIN":{"inland":300,"ocean":775},"ABILENE":{"inland":400,"ocean":900},"ADAMSBURG":{"inland":450,"ocean":775},"ADESAPA":{"inland":300,"ocean":775},"AKRON-CANTON":{"inland":600,"ocean":775},"ALBANY":{"inland":370,"ocean":775},"ALBUQUERQUE":{"inland":650,"ocean":900},"ALTOONA":{"inland":475,"ocean":775},"AMARILLO":{"inland":525,"ocean":900},"ANAHEIM":{"inland":250,"ocean":1475},"ANCHORAGE":{"inland":2950,"ocean":1680},"ANDREWS":{"inland":425,"ocean":900},"ANTELOPE":{"inland":425,"ocean":1475},"APPLETON":{"inland":600,"ocean":775},"ARIZONAAUTOAUCTION":{"inland":400,"ocean":1475},"ASHEVILLE":{"inland":425,"ocean":775},"ASHLAND":{"inland":590,"ocean":775},"ATLANTAAUTOAUCTION":{"inland":325,"ocean":775},"ATLANTAEAST":{"inland":325,"ocean":775},"ATLANTANORTH":{"inland":350,"ocean":775},"ATLANTASOUTH":{"inland":350,"ocean":775},"ATLANTAWEST":{"inland":325,"ocean":775},"AUGUSTA":{"inland":300,"ocean":775},"AUSTIN":{"inland":300,"ocean":900},"AVENELNEWJERSEY":{"inland":190,"ocean":775},"BAKERSFIELD":{"inland":350,"ocean":1475},"BALTIMOR":{"inland":350,"ocean":775},"BANGOR":{"inland":425,"ocean":775},"BATONROUGE":{"inland":390,"ocean":900},"BAYAREA":{"inland":350,"ocean":1475},"BEL-AIRAUTOAUCTION":{"inland":425,"ocean":775},"BILLINGS":{"inland":850,"ocean":1475},"BIRMINGHAM":{"inland":425,"ocean":775},"BOISE":{"inland":550,"ocean":1475},"BOSTON":{"inland":425,"ocean":775},"BOSTON-SHIRLEY":{"inland":425,"ocean":775},"BOWLIMGGREEN":{"inland":500,"ocean":775},"BRIDGEPORT":{"inland":270,"ocean":775},"BRIDGEVIEW":{"inland":190,"ocean":775},"BUCKHANNON":{"inland":625,"ocean":775},"BUFFALO":{"inland":550,"ocean":775},"BURLINGTON":{"inland":525,"ocean":775},"CANDIA":{"inland":425,"ocean":775},"CARTERSVILLE":{"inland":350,"ocean":775},"CASPER":{"inland":1250,"ocean":1475},"CENTRALAUTOAUCTION":{"inland":170,"ocean":775},"CENTRALNEWJERSEY":{"inland":225,"ocean":775},"CHAMBERSBURG":{"inland":390,"ocean":775},"CHARLESTON-SC":{"inland":325,"ocean":775},"CHARLESTON-WV":{"inland":625,"ocean":775},"CHARLOTTE":{"inland":325,"ocean":775},"CHATTANOOGA":{"inland":475,"ocean":775},"CHICAGONORTH":{"inland":610,"ocean":775},"CHICAGOSOUTH":{"inland":610,"ocean":775},"CHICAGOWEST":{"inland":610,"ocean":775},"CHINAGROVE":{"inland":325,"ocean":775},"CICERO":{"inland":575,"ocean":775},"CINCINNATI":{"inland":590,"ocean":775},"CLAYTON":{"inland":325,"ocean":775},"CLEARWATER":{"inland":325,"ocean":775},"CLEVELAND":{"inland":575,"ocean":775},"CLEVELANDEAST":{"inland":525,"ocean":775},"CLEVELANDWEST":{"inland":525,"ocean":775},"CLINTON":{"inland":480,"ocean":775},"COLORADOSPRINGS":{"inland":675,"ocean":900},"COLUMBIAMO":{"inland":650,"ocean":775},"COLUMBIASC":{"inland":300,"ocean":775},"COLUMBUSAL":{"inland":450,"ocean":775},"COLUMBUSOH":{"inland":580,"ocean":775},"CONCORD":{"inland":325,"ocean":775},"CORPUSCHRISTI":{"inland":325,"ocean":900},"CULPEPER,VA":{"inland":390,"ocean":775},"DALLAS":{"inland":350,"ocean":900},"DALLASSOUTH":{"inland":325,"ocean":900},"DANVILLE":{"inland":425,"ocean":775},"DAVENPORT":{"inland":650,"ocean":775},"DAYTON":{"inland":575,"ocean":775},"DEFUNIAKSPRINGS":{"inland":350,"ocean":775},"DENVER":{"inland":700,"ocean":900},"DENVERSOUTH":{"inland":700,"ocean":900},"DESMOINES":{"inland":650,"ocean":775},"DETROIT":{"inland":575,"ocean":775},"DOTHAN":{"inland":390,"ocean":775},"DUNDALK":{"inland":325,"ocean":775},"DYER":{"inland":690,"ocean":775},"EARLINGTON":{"inland":675,"ocean":775},"EASTBAY":{"inland":450,"ocean":1475},"EASTNC":{"inland":400,"ocean":775},"ELPASO":{"inland":450,"ocean":900},"ELDRIDGE":{"inland":675,"ocean":775},"ENGLISHTOWN":{"inland":220,"ocean":775},"ERIE":{"inland":525,"ocean":775},"ESSEX":{"inland":350,"ocean":775},"EUGENE":{"inland":690,"ocean":1475},"EXETER":{"inland":390,"ocean":775},"FARGO":{"inland":1100,"ocean":775},"FAYETTEVILLE":{"inland":500,"ocean":775},"FLINT":{"inland":600,"ocean":775},"FLORENCE":{"inland":475,"ocean":775},"FONTANA":{"inland":230,"ocean":1475},"FORTMYERS":{"inland":350,"ocean":775},"FORTWAYNE":{"inland":580,"ocean":775},"FORTWORTHNORTH":{"inland":325,"ocean":900},"FOUROAKS,NC":{"inland":250,"ocean":775},"FREDERICKSBURG-SOUTH":{"inland":375,"ocean":775},"FREETOWN":{"inland":390,"ocean":775},"FREMONT":{"inland":450,"ocean":1475},"FRESNO":{"inland":400,"ocean":1475},"FT.PIERCE":{"inland":395,"ocean":775},"FT.WORTH":{"inland":350,"ocean":900},"FT.LAUDERDALE":{"inland":350,"ocean":775},"GLASSBOROEAST":{"inland":250,"ocean":775},"GLASSBOROWEST":{"inland":250,"ocean":775},"GOLDENGATE":{"inland":350,"ocean":1475},"GR.RAPIDS":{"inland":650,"ocean":775},"GRAHAM":{"inland":600,"ocean":1475},"GRANDISLAND":{"inland":700,"ocean":775},"GRANTVILLE":{"inland":300,"ocean":775},"GREATERAUTOAUCTIONPHOENIX":{"inland":375,"ocean":1475},"GREENSBORO":{"inland":325,"ocean":775},"GREENVILLE":{"inland":300,"ocean":775},"GREER":{"inland":325,"ocean":775},"GRENADA":{"inland":475,"ocean":775},"GULFCOAST":{"inland":400,"ocean":775},"GULFPORT":{"inland":400,"ocean":775},"HAMMOND":{"inland":600,"ocean":775},"HAMPTON,VA":{"inland":395,"ocean":775},"HARRISBURG":{"inland":315,"ocean":775},"HARRISONBURGAUTOAUCTION":{"inland":350,"ocean":775},"HARTFORD":{"inland":275,"ocean":775},"HARTFORDCITY":{"inland":250,"ocean":775},"HARTFORD-SOUTH":{"inland":275,"ocean":775},"HATWARD":{"inland":1040,"ocean":1475},"HAYWARD":{"inland":450,"ocean":1475},"HELENA":{"inland":1100,"ocean":1475},"HIGHDESERT":{"inland":330,"ocean":1475},"HONOLULU":{"inland":1690,"ocean":1475},"HOUSTON":{"inland":200,"ocean":900},"HOUSTONEAST":{"inland":230,"ocean":900},"HOUSTON-NORTH":{"inland":200,"ocean":900},"HUNTSVILLE":{"inland":450,"ocean":775},"INDIANAPOLIS":{"inland":600,"ocean":775},"IONIA":{"inland":650,"ocean":775},"JACKSON":{"inland":425,"ocean":775},"JACKSONVILLE":{"inland":265,"ocean":775},"JACKSONVILLEEAST":{"inland":275,"ocean":775},"JACKSONVILLEWEST":{"inland":275,"ocean":775},"KANSASCITY":{"inland":675,"ocean":775},"KINCHELOE":{"inland":875,"ocean":775},"KNOXVILLE":{"inland":450,"ocean":775},"LAFAYETTE":{"inland":375,"ocean":900},"LANSING":{"inland":680,"ocean":775},"LASVEGAS":{"inland":370,"ocean":1475},"LAUREL":{"inland":325,"ocean":775},"LEXINGTONEASTKY":{"inland":590,"ocean":775},"LEXINGTONSC":{"inland":350,"ocean":775},"LEXINGTONWESTKY":{"inland":590,"ocean":775},"LINCOLN,IL":{"inland":690,"ocean":775},"LINCOLN,NE":{"inland":690,"ocean":775},"LITTLEROCK":{"inland":490,"ocean":900},"LONGBEACH":{"inland":180,"ocean":1475},"LONGISLAND":{"inland":275,"ocean":775},"LONGVIEW":{"inland":325,"ocean":900},"LOSANGELES":{"inland":250,"ocean":1475},"LOSANGELES-ADESA":{"inland":250,"ocean":1475},"LOUISVILLE":{"inland":575,"ocean":775},"LUBBOCK":{"inland":475,"ocean":900},"LUFKIN":{"inland":325,"ocean":900},"LUMBERTON":{"inland":325,"ocean":775},"LYMAN":{"inland":450,"ocean":775},"MCALLEN":{"inland":390,"ocean":900},"MACON":{"inland":300,"ocean":775},"MADISON":{"inland":690,"ocean":775},"MADISONHEIGHTS":{"inland":420,"ocean":775},"MADISONSOUTH":{"inland":720,"ocean":775},"MANCHESTER":{"inland":400,"ocean":775},"MARTINEZ":{"inland":425,"ocean":1475},"MEBANE":{"inland":350,"ocean":775},"MEMPHIS":{"inland":500,"ocean":775},"MENTONE":{"inland":225,"ocean":1475},"METRODC":{"inland":325,"ocean":775},"MIAMI":{"inland":390,"ocean":775},"MIAMICENTRAL":{"inland":390,"ocean":775},"MIAMINORTH":{"inland":390,"ocean":775},"MIAMISOUTH":{"inland":390,"ocean":775},"MIDDLETOWN":{"inland":290,"ocean":775},"MILWAUKEE":{"inland":630,"ocean":775},"MINNEAPOLIS":{"inland":650,"ocean":775},"MINNEAPOLIS/ST.PAUL":{"inland":650,"ocean":775},"MINNEAPOLISNORTH":{"inland":650,"ocean":775},"MISSOULA":{"inland":950,"ocean":1475},"MOBILE":{"inland":450,"ocean":775},"MOCKSVILLE":{"inland":315,"ocean":775},"MONTGOMERY":{"inland":450,"ocean":775},"NAPA":{"inland":450,"ocean":1475},"NASHVILLE":{"inland":450,"ocean":775},"NATIONALAUTODEALERSEXCHANGE":{"inland":150,"ocean":775},"NEWCASTLE":{"inland":300,"ocean":775},"NEWORLEANS":{"inland":450,"ocean":900},"NEWBURGH":{"inland":275,"ocean":775},"NORTHBOSTON":{"inland":375,"ocean":775},"NORTHCHARLESTON-SC":{"inland":290,"ocean":775},"NORTHHOLLYWOOD":{"inland":230,"ocean":1475},"NORTHSEATTLE":{"inland":500,"ocean":1475},"NORTHERNNEWJERSEY":{"inland":190,"ocean":775},"NORTHERNVIRGINIA":{"inland":325,"ocean":775},"OCALA":{"inland":325,"ocean":775},"OGDEN":{"inland":550,"ocean":1475},"OKLAHOMACITY":{"inland":450,"ocean":900},"OMAHA":{"inland":650,"ocean":775},"ORLANDO":{"inland":400,"ocean":775},"ORLANDONORTH":{"inland":400,"ocean":775},"ORLANDOSOUTH":{"inland":400,"ocean":775},"PADUCAH":{"inland":575,"ocean":775},"PASCO":{"inland":575,"ocean":1475},"PENSACOLA":{"inland":425,"ocean":775},"PEORIA":{"inland":590,"ocean":775},"PERMIANBASIN":{"inland":475,"ocean":900},"PHILADELPHIA":{"inland":250,"ocean":775},"PHILADELPHIAEAST":{"inland":270,"ocean":775},"PHOENIX":{"inland":390,"ocean":1475},"PITTSBURG":{"inland":450,"ocean":775},"PITTSBURGHNORTH":{"inland":460,"ocean":775},"PITTSBURGHSOUTH":{"inland":470,"ocean":775},"PORTAGE":{"inland":975,"ocean":775},"PORTLAND":{"inland":475,"ocean":1475},"PORTLAND-GORHAM":{"inland":475,"ocean":775},"PORTLANDNORTH":{"inland":550,"ocean":1475},"PORTLANDSOUTH":{"inland":550,"ocean":1475},"PORTLANDWEST":{"inland":475,"ocean":1475},"PROVIDENCE":{"inland":475,"ocean":775},"PULASKI":{"inland":425,"ocean":775},"PUNTAGORDA":{"inland":350,"ocean":775},"PUYALLUP":{"inland":490,"ocean":1475},"RALEIGH":{"inland":325,"ocean":775},"RANCHOCUCAMONGA":{"inland":230,"ocean":1475},"RAPIDCITY":{"inland":1100,"ocean":775},"REDDING":{"inland":750,"ocean":1475},"RENO":{"inland":550,"ocean":1475},"RICHMOND":{"inland":385,"ocean":775},"RICHMONDEAST":{"inland":400,"ocean":775},"RIVERSIDE":{"inland":230,"ocean":1475},"ROANOKE":{"inland":450,"ocean":775},"ROCHESTER":{"inland":450,"ocean":775},"ROSEDALE":{"inland":350,"ocean":775},"RUTLAND":{"inland":500,"ocean":775},"SACRAMENTO":{"inland":450,"ocean":1475},"SALISBURY":{"inland":350,"ocean":775},"SALTLAKECITY":{"inland":650,"ocean":1475},"SANANTONIO":{"inland":335,"ocean":900},"SANBERNARDINO":{"inland":250,"ocean":1475},"SANDIEGO":{"inland":290,"ocean":1475},"SANJOSE":{"inland":450,"ocean":1475},"SANTACLARITA":{"inland":260,"ocean":1475},"SARASOTA":{"inland":275,"ocean":775},"SAVANNAH":{"inland":150,"ocean":775},"SAYREVILLE":{"inland":200,"ocean":775},"SCRANTON":{"inland":300,"ocean":775},"SEAFORD":{"inland":350,"ocean":775},"SEATTLE":{"inland":590,"ocean":1475},"SHADYSPRING,WV":{"inland":625,"ocean":775},"SHREVEPORT":{"inland":350,"ocean":900},"SIKESTON":{"inland":590,"ocean":775},"SIOUXFALLS":{"inland":890,"ocean":775},"SOSACRAMENTO":{"inland":450,"ocean":1475},"SOMERVILLE":{"inland":210,"ocean":775},"SOUTHBEND":{"inland":575,"ocean":775},"SOUTHBOSTON":{"inland":400,"ocean":775},"SOUTHERNILLINOIS":{"inland":575,"ocean":775},"SOUTHERNNEWJERSEY":{"inland":225,"ocean":775},"SPARTANBURG":{"inland":300,"ocean":775},"SPOKANE":{"inland":800,"ocean":1475},"SPRINGFIELD":{"inland":600,"ocean":775},"ST.CLOUD":{"inland":700,"ocean":775},"ST.LOUIS":{"inland":575,"ocean":900},"SUFFOLK":{"inland":425,"ocean":775},"SUNVALLEY":{"inland":230,"ocean":1475},"SYRACUSE":{"inland":375,"ocean":775},"TALLAHASSEE":{"inland":325,"ocean":775},"TAMPA":{"inland":325,"ocean":775},"TAMPASOUTH":{"inland":325,"ocean":775},"TANNER":{"inland":450,"ocean":775},"TAUNTON":{"inland":375,"ocean":775},"TEMPLETON":{"inland":375,"ocean":775},"TIDEWATER":{"inland":350,"ocean":775},"TIFTON":{"inland":300,"ocean":775},"TRENTON":{"inland":230,"ocean":775},"TUCSON":{"inland":420,"ocean":1475},"TULSA":{"inland":525,"ocean":900},"VALLEJO":{"inland":500,"ocean":1475},"VANNUYS":{"inland":225,"ocean":1475},"WACO":{"inland":325,"ocean":900},"WALTON":{"inland":550,"ocean":775},"WASHINGTONDC":{"inland":325,"ocean":775},"WAYLAND":{"inland":660,"ocean":775},"WEBSTER":{"inland":450,"ocean":775},"WESTPALMBEACH":{"inland":375,"ocean":775},"WESTWARREN":{"inland":375,"ocean":775},"WESTERNCOLORADO":{"inland":850,"ocean":1475},"WHEELING":{"inland":600,"ocean":775},"WICHITA":{"inland":600,"ocean":775},"WILMINGTON":{"inland":375,"ocean":775},"WINDHAM":{"inland":490,"ocean":775},"YORKHAVEN":{"inland":310,"ocean":775},"YORKSPRINGS":{"inland":325,"ocean":775}},"SUV":{"YORKSPRINGS":{"inland":325,"ocean":1075},"YORKHAVEN":{"inland":310,"ocean":1075},"WINDHAM":{"inland":490,"ocean":1075},"WILMINGTON":{"inland":375,"ocean":1075},"WICHITA":{"inland":600,"ocean":1075},"WHEELING":{"inland":600,"ocean":1075},"WESTERNCOLORADO":{"inland":850,"ocean":1975},"WESTWARREN":{"inland":375,"ocean":1075},"WESTPALMBEACH":{"inland":375,"ocean":1075},"WEBSTER":{"inland":450,"ocean":1075},"WAYLAND":{"inland":660,"ocean":1075},"WASHINGTONDC":{"inland":325,"ocean":1075},"WALTON":{"inland":550,"ocean":1075},"WACO":{"inland":325,"ocean":1200},"VANNUYS":{"inland":225,"ocean":1975},"VALLEJO":{"inland":500,"ocean":1975},"TULSA":{"inland":525,"ocean":1200},"TUCSON":{"inland":420,"ocean":1975},"TRENTON":{"inland":230,"ocean":1075},"TIFTON":{"inland":300,"ocean":1075},"TIDEWATER":{"inland":350,"ocean":1075},"TEMPLETON":{"inland":375,"ocean":1075},"TAUNTON":{"inland":375,"ocean":1075},"TANNER":{"inland":450,"ocean":1075},"TAMPASOUTH":{"inland":325,"ocean":1075},"TAMPA":{"inland":325,"ocean":1075},"TALLAHASSEE":{"inland":325,"ocean":1075},"TOTALRESOURCEAUCCENTRLPENN":{"inland":300,"ocean":1075},"SYRACUSE":{"inland":375,"ocean":1075},"SUNVALLEY":{"inland":230,"ocean":1975},"SUFFOLK":{"inland":425,"ocean":1075},"ST.LOUIS":{"inland":575,"ocean":1200},"ST.CLOUD":{"inland":700,"ocean":1075},"SPRINGFIELD":{"inland":600,"ocean":1075},"SPOKANE":{"inland":800,"ocean":1975},"SPARTANBURG":{"inland":300,"ocean":1075},"SOUTHERNNEWJERSEY":{"inland":225,"ocean":1075},"SOUTHERNILLINOIS":{"inland":575,"ocean":1075},"SOUTHBOSTON":{"inland":400,"ocean":1075},"SOUTHBEND":{"inland":575,"ocean":1075},"SOMERVILLE":{"inland":210,"ocean":1075},"SOSACRAMENTO":{"inland":450,"ocean":1975},"SIOUXFALLS":{"inland":890,"ocean":1075},"SIKESTON":{"inland":590,"ocean":1075},"SHREVEPORT":{"inland":350,"ocean":1200},"SHADYSPRING,WV":{"inland":625,"ocean":1075},"SEATTLE":{"inland":590,"ocean":1975},"SEAFORD":{"inland":350,"ocean":1075},"SCRANTON":{"inland":300,"ocean":1075},"SAYREVILLE":{"inland":200,"ocean":1075},"SAVANNAH":{"inland":150,"ocean":1075},"SARASOTA":{"inland":275,"ocean":1075},"SANTACLARITA":{"inland":260,"ocean":1775},"SANJOSE":{"inland":450,"ocean":1975},"SANDIEGO":{"inland":290,"ocean":1975},"SANBERNARDINO":{"inland":250,"ocean":1975},"SANANTONIO":{"inland":335,"ocean":1200},"SALTLAKECITY":{"inland":650,"ocean":1975},"SALISBURY":{"inland":350,"ocean":1075},"SACRAMENTO":{"inland":450,"ocean":1975},"RUTLAND":{"inland":500,"ocean":1075},"ROSEDALE":{"inland":350,"ocean":1075},"ROCHESTER":{"inland":450,"ocean":1075},"ROANOKE":{"inland":450,"ocean":1075},"RIVERSIDE":{"inland":230,"ocean":1975},"RICHMONDEAST":{"inland":400,"ocean":1075},"RICHMOND":{"inland":385,"ocean":1075},"RENO":{"inland":550,"ocean":1975},"REDDING":{"inland":750,"ocean":1975},"RAPIDCITY":{"inland":1100,"ocean":1075},"RANCHOCUCAMONGA":{"inland":230,"ocean":1975},"RALEIGH":{"inland":325,"ocean":1075},"PUYALLUP":{"inland":490,"ocean":1975},"PUNTAGORDA":{"inland":350,"ocean":1075},"PULASKI":{"inland":425,"ocean":1075},"PROVIDENCE":{"inland":475,"ocean":1075},"PORTLANDWEST":{"inland":475,"ocean":1975},"PORTLANDSOUTH":{"inland":550,"ocean":1975},"PORTLANDNORTH":{"inland":550,"ocean":1975},"PORTLAND-GORHAM":{"inland":475,"ocean":1075},"PORTLAND":{"inland":475,"ocean":1975},"PORTAGE":{"inland":975,"ocean":1075},"PITTSBURGHSOUTH":{"inland":470,"ocean":1075},"PITTSBURGHNORTH":{"inland":460,"ocean":1075},"PITTSBURG":{"inland":450,"ocean":1075},"PHOENIX":{"inland":390,"ocean":1975},"PHILADELPHIAEAST":{"inland":270,"ocean":1075},"PHILADELPHIA":{"inland":250,"ocean":1075},"PERMIANBASIN":{"inland":475,"ocean":1200},"PEORIA":{"inland":590,"ocean":1075},"PENSACOLA":{"inland":425,"ocean":1075},"PASCO":{"inland":575,"ocean":1975},"PADUCAH":{"inland":575,"ocean":1075},"ORLANDOSOUTH":{"inland":400,"ocean":1075},"ORLANDONORTH":{"inland":400,"ocean":1075},"ORLANDO":{"inland":400,"ocean":1075},"OMAHA":{"inland":650,"ocean":1075},"OKLAHOMACITY":{"inland":450,"ocean":1200},"OGDEN":{"inland":550,"ocean":1975},"OCALA":{"inland":325,"ocean":1075},"NORTHERNVIRGINIA":{"inland":325,"ocean":1075},"NORTHERNNEWJERSEY":{"inland":190,"ocean":1075},"NORTHSEATTLE":{"inland":500,"ocean":1975},"NORTHHOLLYWOOD":{"inland":230,"ocean":1975},"NORTHCHARLESTON-SC":{"inland":290,"ocean":1075},"NORTHBOSTON":{"inland":375,"ocean":1075},"NEWBURGH":{"inland":275,"ocean":1075},"NEWORLEANS":{"inland":450,"ocean":1200},"NEWCASTLE":{"inland":300,"ocean":1075},"NATIONALAUTODEALERSEXCHANGE":{"inland":150,"ocean":1075},"NASHVILLE":{"inland":450,"ocean":1075},"NAPA":{"inland":450,"ocean":1775},"MONTGOMERY":{"inland":450,"ocean":1075},"MOCKSVILLE":{"inland":315,"ocean":1075},"MOBILE":{"inland":450,"ocean":1075},"MISSOULA":{"inland":950,"ocean":1975},"MINNEAPOLISNORTH":{"inland":650,"ocean":1075},"MINNEAPOLIS/ST.PAUL":{"inland":650,"ocean":1075},"MINNEAPOLIS":{"inland":650,"ocean":1075},"MILWAUKEE":{"inland":630,"ocean":1075},"MIDDLETOWN":{"inland":290,"ocean":1075},"MIAMISOUTH":{"inland":390,"ocean":1075},"MIAMINORTH":{"inland":390,"ocean":1075},"MIAMICENTRAL":{"inland":390,"ocean":1075},"MIAMI":{"inland":390,"ocean":1075},"METRODC":{"inland":325,"ocean":1075},"MENTONE":{"inland":225,"ocean":1775},"MEMPHIS":{"inland":500,"ocean":1075},"MEBANE":{"inland":350,"ocean":1075},"MARTINEZ":{"inland":425,"ocean":1975},"MANCHESTER":{"inland":400,"ocean":1075},"MADISONSOUTH":{"inland":720,"ocean":1075},"MADISONHEIGHTS":{"inland":420,"ocean":1075},"MADISON":{"inland":690,"ocean":1075},"MACON":{"inland":300,"ocean":1075},"MCALLEN":{"inland":390,"ocean":1200},"LYMAN":{"inland":450,"ocean":1075},"LUMBERTON":{"inland":325,"ocean":1075},"LUFKIN":{"inland":325,"ocean":1200},"LUBBOCK":{"inland":475,"ocean":1200},"LOUISVILLE":{"inland":575,"ocean":1075},"LOSANGELES-ADESA":{"inland":250,"ocean":1975},"LOSANGELES":{"inland":250,"ocean":1975},"LONGVIEW":{"inland":325,"ocean":1200},"LONGISLAND":{"inland":275,"ocean":1075},"LONGBEACH":{"inland":180,"ocean":1975},"LITTLEROCK":{"inland":490,"ocean":1200},"LINCOLN,NE":{"inland":690,"ocean":1075},"LINCOLN,IL":{"inland":690,"ocean":1075},"LEXINGTONWESTKY":{"inland":590,"ocean":1075},"LEXINGTONSC":{"inland":350,"ocean":1075},"LEXINGTONEASTKY":{"inland":590,"ocean":1075},"LAUREL":{"inland":325,"ocean":1075},"LASVEGAS":{"inland":370,"ocean":1975},"LANSING":{"inland":680,"ocean":1075},"LAFAYETTE":{"inland":375,"ocean":1200},"KNOXVILLE":{"inland":450,"ocean":1075},"KINCHELOE":{"inland":875,"ocean":1075},"KANSASCITY":{"inland":675,"ocean":1075},"JACKSONVILLEWEST":{"inland":275,"ocean":1075},"JACKSONVILLEEAST":{"inland":275,"ocean":1075},"JACKSONVILLE":{"inland":265,"ocean":1075},"JACKSON":{"inland":425,"ocean":1075},"IONIA":{"inland":650,"ocean":1075},"INDIANAPOLIS":{"inland":600,"ocean":1075},"HUNTSVILLE":{"inland":450,"ocean":1075},"HOUSTON-NORTH":{"inland":200,"ocean":1200},"HOUSTONEAST":{"inland":230,"ocean":1200},"HOUSTON":{"inland":200,"ocean":1200},"HONOLULU":{"inland":1690,"ocean":1975},"HIGHDESERT":{"inland":330,"ocean":1975},"HELENA":{"inland":1100,"ocean":1975},"HAYWARD":{"inland":450,"ocean":1975},"HATWARD":{"inland":1040,"ocean":1975},"HARTFORD-SOUTH":{"inland":275,"ocean":1075},"HARTFORDCITY":{"inland":250,"ocean":1075},"HARTFORD":{"inland":275,"ocean":1075},"HARRISONBURGAUTOAUCTION":{"inland":350,"ocean":1075},"HARRISBURG":{"inland":315,"ocean":1075},"HAMPTON,VA":{"inland":395,"ocean":1075},"HAMMOND":{"inland":600,"ocean":1075},"GULFPORT":{"inland":400,"ocean":1075},"GULFCOAST":{"inland":400,"ocean":1075},"GRENADA":{"inland":475,"ocean":1075},"GREER":{"inland":325,"ocean":1075},"GREENVILLE":{"inland":300,"ocean":1075},"GREENSBORO":{"inland":325,"ocean":1075},"GREATERAUTOAUCTIONPHOENIX":{"inland":375,"ocean":1975},"GRANTVILLE":{"inland":300,"ocean":1075},"GRANDISLAND":{"inland":700,"ocean":1075},"GRAHAM":{"inland":600,"ocean":1975},"GR.RAPIDS":{"inland":650,"ocean":1075},"GOLDENGATE":{"inland":350,"ocean":1975},"GLASSBOROWEST":{"inland":250,"ocean":1075},"GLASSBOROEAST":{"inland":250,"ocean":1075},"FT.LAUDERDALE":{"inland":350,"ocean":1075},"FT.WORTH":{"inland":350,"ocean":1200},"FT.PIERCE":{"inland":395,"ocean":1075},"FRESNO":{"inland":400,"ocean":1975},"FREMONT":{"inland":450,"ocean":1975},"FREETOWN":{"inland":390,"ocean":1075},"FREDERICKSBURG-SOUTH":{"inland":375,"ocean":1075},"FOUROAKS,NC":{"inland":250,"ocean":1075},"FORTWORTHNORTH":{"inland":325,"ocean":1200},"FORTWAYNE":{"inland":580,"ocean":1075},"FORTMYERS":{"inland":350,"ocean":1075},"FONTANA":{"inland":230,"ocean":1975},"FLORENCE":{"inland":475,"ocean":1075},"FLINT":{"inland":600,"ocean":1075},"FAYETTEVILLE":{"inland":500,"ocean":1075},"FARGO":{"inland":1100,"ocean":1075},"EXETER":{"inland":390,"ocean":1075},"EUGENE":{"inland":690,"ocean":1975},"ESSEX":{"inland":350,"ocean":1075},"ERIE":{"inland":525,"ocean":1075},"ENGLISHTOWN":{"inland":220,"ocean":1075},"ELDRIDGE":{"inland":675,"ocean":1075},"ELPASO":{"inland":450,"ocean":1200},"EASTNC":{"inland":400,"ocean":1075},"EASTBAY":{"inland":450,"ocean":1975},"EARLINGTON":{"inland":675,"ocean":1075},"DYER":{"inland":690,"ocean":1075},"DUNDALK":{"inland":325,"ocean":1075},"DOTHAN":{"inland":390,"ocean":1075},"DETROIT":{"inland":575,"ocean":1075},"DESMOINES":{"inland":650,"ocean":1075},"DENVERSOUTH":{"inland":700,"ocean":1200},"DENVER":{"inland":700,"ocean":1200},"DEFUNIAKSPRINGS":{"inland":350,"ocean":1075},"DAYTON":{"inland":575,"ocean":1075},"DAVENPORT":{"inland":650,"ocean":1075},"DANVILLE":{"inland":425,"ocean":1075},"DALLASSOUTH":{"inland":325,"ocean":1200},"DALLAS":{"inland":350,"ocean":1200},"CULPEPER,VA":{"inland":390,"ocean":1075},"CORPUSCHRISTI":{"inland":325,"ocean":1200},"CONCORD":{"inland":325,"ocean":1075},"COLUMBUSOH":{"inland":580,"ocean":1075},"COLUMBUSAL":{"inland":450,"ocean":1075},"COLUMBIASC":{"inland":300,"ocean":1075},"COLUMBIAMO":{"inland":650,"ocean":1075},"COLORADOSPRINGS":{"inland":675,"ocean":1200},"CLINTON":{"inland":480,"ocean":1075},"CLEVELANDWEST":{"inland":525,"ocean":1075},"CLEVELANDEAST":{"inland":525,"ocean":1075},"CLEVELAND":{"inland":575,"ocean":1075},"CLEARWATER":{"inland":325,"ocean":1075},"CLAYTON":{"inland":325,"ocean":1075},"CINCINNATI":{"inland":590,"ocean":1075},"CICERO":{"inland":575,"ocean":1075},"CHINAGROVE":{"inland":325,"ocean":1075},"CHICAGOWEST":{"inland":610,"ocean":1075},"CHICAGOSOUTH":{"inland":610,"ocean":1075},"CHICAGONORTH":{"inland":610,"ocean":1075},"CHATTANOOGA":{"inland":475,"ocean":1075},"CHARLOTTE":{"inland":325,"ocean":1075},"CHARLESTON-WV":{"inland":625,"ocean":1075},"CHARLESTON-SC":{"inland":325,"ocean":1075},"CHAMBERSBURG":{"inland":390,"ocean":1075},"CENTRALNEWJERSEY":{"inland":225,"ocean":1075},"CENTRALAUTOAUCTION":{"inland":170,"ocean":1075},"CASPER":{"inland":1250,"ocean":1975},"CARTERSVILLE":{"inland":350,"ocean":1075},"CANDIA":{"inland":425,"ocean":1075},"BURLINGTON":{"inland":525,"ocean":1075},"BUFFALO":{"inland":550,"ocean":1075},"BUCKHANNON":{"inland":625,"ocean":1075},"BRIDGEVIEW":{"inland":190,"ocean":1075},"BRIDGEPORT":{"inland":270,"ocean":1075},"BOWLIMGGREEN":{"inland":500,"ocean":1075},"BOSTON-SHIRLEY":{"inland":425,"ocean":1075},"BOSTON":{"inland":425,"ocean":1075},"BOISE":{"inland":550,"ocean":1975},"BIRMINGHAM":{"inland":425,"ocean":1075},"BILLINGS":{"inland":850,"ocean":1975},"BEL-AIRAUTOAUCTION":{"inland":425,"ocean":1075},"BAYAREA":{"inland":350,"ocean":1975},"BATONROUGE":{"inland":390,"ocean":1200},"BANGOR":{"inland":425,"ocean":1075},"BALTIMOR":{"inland":350,"ocean":1075},"BAKERSFIELD":{"inland":350,"ocean":1975},"AVENELNEWJERSEY":{"inland":190,"ocean":1075},"AUSTIN":{"inland":300,"ocean":1200},"AUGUSTA":{"inland":300,"ocean":1075},"ATLANTAWEST":{"inland":325,"ocean":1075},"ATLANTASOUTH":{"inland":350,"ocean":1075},"ATLANTANORTH":{"inland":350,"ocean":1075},"ATLANTAEAST":{"inland":325,"ocean":1075},"ATLANTAAUTOAUCTION":{"inland":325,"ocean":1075},"ASHLAND":{"inland":590,"ocean":1075},"ASHEVILLE":{"inland":425,"ocean":1075},"ARIZONAAUTOAUCTION":{"inland":400,"ocean":1975},"APPLETON":{"inland":600,"ocean":1075},"ANTELOPE":{"inland":425,"ocean":1975},"ANDREWS":{"inland":425,"ocean":1200},"ANCHORAGE":{"inland":2950,"ocean":2180},"ANAHEIM":{"inland":250,"ocean":1975},"AMARILLO":{"inland":525,"ocean":1200},"ALTOONA":{"inland":475,"ocean":1075},"ALBUQUERQUE":{"inland":650,"ocean":1200},"ALBANY":{"inland":370,"ocean":1075},"AKRON-CANTON":{"inland":600,"ocean":1075},"ADESAPA":{"inland":300,"ocean":1075},"ADAMSBURG":{"inland":450,"ocean":1075},"ABILENE":{"inland":400,"ocean":1200},"ADESAWISCONSIN":{"inland":300,"ocean":1075},"ADESASIOUXFALLS":{"inland":600,"ocean":1975},"ADESANEWJERSEY":{"inland":200,"ocean":1075},"ADESAGREATLAKES":{"inland":575,"ocean":1075},"ADESABOSTON":{"inland":425,"ocean":1075},"ACE-PERRIS":{"inland":290,"ocean":1975},"ACE-CARSON":{"inland":225,"ocean":1975}}},"POTI":{"SEDAN":{"YORKSPRINGS":{"inland":325,"ocean":1075},"YORKHAVEN":{"inland":310,"ocean":1075},"WINDHAM":{"inland":490,"ocean":1075},"WILMINGTON":{"inland":375,"ocean":1075},"WICHITA":{"inland":600,"ocean":1075},"WHEELING":{"inland":600,"ocean":1075},"WESTERNCOLORADO":{"inland":850,"ocean":1775},"WESTWARREN":{"inland":375,"ocean":1075},"WESTPALMBEACH":{"inland":375,"ocean":1075},"WEBSTER":{"inland":450,"ocean":1075},"WAYLAND":{"inland":660,"ocean":1075},"WASHINGTONDC":{"inland":325,"ocean":1075},"WALTON":{"inland":550,"ocean":1075},"WACO":{"inland":325,"ocean":1200},"VANNUYS":{"inland":225,"ocean":1775},"VALLEJO":{"inland":500,"ocean":1775},"TULSA":{"inland":525,"ocean":1200},"TUCSON":{"inland":420,"ocean":1775},"TRENTON":{"inland":230,"ocean":1075},"TIFTON":{"inland":300,"ocean":1075},"TIDEWATER":{"inland":350,"ocean":1075},"TEMPLETON":{"inland":375,"ocean":1075},"TAUNTON":{"inland":375,"ocean":1075},"TANNER":{"inland":450,"ocean":1075},"TAMPASOUTH":{"inland":325,"ocean":1075},"TAMPA":{"inland":325,"ocean":1075},"TALLAHASSEE":{"inland":325,"ocean":1075},"TOTALRESOURCEAUCCENTRLPENN":{"inland":300,"ocean":1075},"SYRACUSE":{"inland":375,"ocean":1075},"SUNVALLEY":{"inland":230,"ocean":1775},"SUFFOLK":{"inland":425,"ocean":1075},"ST.LOUIS":{"inland":575,"ocean":1200},"ST.CLOUD":{"inland":700,"ocean":1075},"SPRINGFIELD":{"inland":600,"ocean":1075},"SPOKANE":{"inland":800,"ocean":1775},"SPARTANBURG":{"inland":300,"ocean":1075},"SOUTHERNNEWJERSEY":{"inland":225,"ocean":1075},"SOUTHERNILLINOIS":{"inland":575,"ocean":1075},"SOUTHBOSTON":{"inland":400,"ocean":1075},"SOUTHBEND":{"inland":575,"ocean":1075},"SOMERVILLE":{"inland":210,"ocean":1075},"SOSACRAMENTO":{"inland":450,"ocean":1775},"SIOUXFALLS":{"inland":890,"ocean":1075},"SIKESTON":{"inland":590,"ocean":1075},"SHREVEPORT":{"inland":350,"ocean":1200},"SHADYSPRING,WV":{"inland":625,"ocean":1075},"SEATTLE":{"inland":590,"ocean":1775},"SEAFORD":{"inland":350,"ocean":1075},"SCRANTON":{"inland":300,"ocean":1075},"SAYREVILLE":{"inland":200,"ocean":1075},"SAVANNAH":{"inland":150,"ocean":1075},"SARASOTA":{"inland":275,"ocean":1075},"SANTACLARITA":{"inland":260,"ocean":1775},"SANJOSE":{"inland":450,"ocean":1775},"SANDIEGO":{"inland":290,"ocean":1775},"SANBERNARDINO":{"inland":250,"ocean":1775},"SANANTONIO":{"inland":335,"ocean":1200},"SALTLAKECITY":{"inland":650,"ocean":1775},"SALISBURY":{"inland":350,"ocean":1075},"SACRAMENTO":{"inland":450,"ocean":1775},"RUTLAND":{"inland":500,"ocean":1075},"ROSEDALE":{"inland":350,"ocean":1075},"ROCHESTER":{"inland":450,"ocean":1075},"ROANOKE":{"inland":450,"ocean":1075},"RIVERSIDE":{"inland":230,"ocean":1775},"RICHMONDEAST":{"inland":400,"ocean":1075},"RICHMOND":{"inland":385,"ocean":1075},"RENO":{"inland":550,"ocean":1775},"REDDING":{"inland":750,"ocean":1775},"RAPIDCITY":{"inland":1100,"ocean":1075},"RANCHOCUCAMONGA":{"inland":230,"ocean":1775},"RALEIGH":{"inland":325,"ocean":1075},"PUYALLUP":{"inland":490,"ocean":1775},"PUNTAGORDA":{"inland":350,"ocean":1075},"PULASKI":{"inland":425,"ocean":1075},"PROVIDENCE":{"inland":475,"ocean":1075},"PORTLANDWEST":{"inland":475,"ocean":1775},"PORTLANDSOUTH":{"inland":550,"ocean":1775},"PORTLANDNORTH":{"inland":550,"ocean":1775},"PORTLAND-GORHAM":{"inland":475,"ocean":1075},"PORTLAND":{"inland":475,"ocean":1775},"PORTAGE":{"inland":975,"ocean":1075},"PITTSBURGHSOUTH":{"inland":470,"ocean":1075},"PITTSBURGHNORTH":{"inland":460,"ocean":1075},"PITTSBURG":{"inland":450,"ocean":1075},"PHOENIX":{"inland":390,"ocean":1775},"PHILADELPHIAEAST":{"inland":270,"ocean":1075},"PHILADELPHIA":{"inland":250,"ocean":1075},"PERMIANBASIN":{"inland":475,"ocean":1200},"PEORIA":{"inland":590,"ocean":1075},"PENSACOLA":{"inland":425,"ocean":1075},"PASCO":{"inland":575,"ocean":1775},"PADUCAH":{"inland":575,"ocean":1075},"ORLANDOSOUTH":{"inland":400,"ocean":1075},"ORLANDONORTH":{"inland":400,"ocean":1075},"ORLANDO":{"inland":400,"ocean":1075},"OMAHA":{"inland":650,"ocean":1075},"OKLAHOMACITY":{"inland":450,"ocean":1200},"OGDEN":{"inland":550,"ocean":1775},"OCALA":{"inland":325,"ocean":1075},"NORTHERNVIRGINIA":{"inland":325,"ocean":1075},"NORTHERNNEWJERSEY":{"inland":190,"ocean":1075},"NORTHSEATTLE":{"inland":500,"ocean":1775},"NORTHHOLLYWOOD":{"inland":230,"ocean":1775},"NORTHCHARLESTON-SC":{"inland":290,"ocean":1075},"NORTHBOSTON":{"inland":375,"ocean":1075},"NEWBURGH":{"inland":275,"ocean":1075},"NEWORLEANS":{"inland":450,"ocean":1200},"NEWCASTLE":{"inland":300,"ocean":1075},"NATIONALAUTODEALERSEXCHANGE":{"inland":150,"ocean":1075},"NASHVILLE":{"inland":450,"ocean":1075},"NAPA":{"inland":450,"ocean":1775},"MONTGOMERY":{"inland":450,"ocean":1075},"MOCKSVILLE":{"inland":315,"ocean":1075},"MOBILE":{"inland":450,"ocean":1075},"MISSOULA":{"inland":950,"ocean":1775},"MINNEAPOLISNORTH":{"inland":650,"ocean":1075},"MINNEAPOLIS/ST.PAUL":{"inland":650,"ocean":1075},"MINNEAPOLIS":{"inland":650,"ocean":1075},"MILWAUKEE":{"inland":630,"ocean":1075},"MIDDLETOWN":{"inland":290,"ocean":1075},"MIAMISOUTH":{"inland":390,"ocean":1075},"MIAMINORTH":{"inland":390,"ocean":1075},"MIAMICENTRAL":{"inland":390,"ocean":1075},"MIAMI":{"inland":390,"ocean":1075},"METRODC":{"inland":325,"ocean":1075},"MENTONE":{"inland":225,"ocean":1775},"MEMPHIS":{"inland":500,"ocean":1075},"MEBANE":{"inland":350,"ocean":1075},"MARTINEZ":{"inland":425,"ocean":1775},"MANCHESTER":{"inland":400,"ocean":1075},"MADISONSOUTH":{"inland":720,"ocean":1075},"MADISONHEIGHTS":{"inland":420,"ocean":1075},"MADISON":{"inland":690,"ocean":1075},"MACON":{"inland":300,"ocean":1075},"MCALLEN":{"inland":390,"ocean":1200},"LUMBERTON":{"inland":325,"ocean":1075},"LYMAN":{"inland":450,"ocean":1075},"LUFKIN":{"inland":325,"ocean":1200},"LUBBOCK":{"inland":475,"ocean":1200},"LOUISVILLE":{"inland":575,"ocean":1075},"LOSANGELES-ADESA":{"inland":250,"ocean":1775},"LOSANGELES":{"inland":250,"ocean":1775},"LONGVIEW":{"inland":325,"ocean":1200},"LONGISLAND":{"inland":275,"ocean":1075},"LONGBEACH":{"inland":180,"ocean":1775},"LITTLEROCK":{"inland":490,"ocean":1200},"LINCOLN,NE":{"inland":690,"ocean":1075},"LINCOLN,IL":{"inland":690,"ocean":1075},"LEXINGTONWESTKY":{"inland":590,"ocean":1075},"LEXINGTONSC":{"inland":350,"ocean":1075},"LEXINGTONEASTKY":{"inland":590,"ocean":1075},"LAUREL":{"inland":325,"ocean":1075},"LASVEGAS":{"inland":370,"ocean":1775},"LANSING":{"inland":680,"ocean":1075},"LAFAYETTE":{"inland":375,"ocean":1200},"KNOXVILLE":{"inland":450,"ocean":1075},"KINCHELOE":{"inland":875,"ocean":1075},"KANSASCITY":{"inland":675,"ocean":1075},"JACKSONVILLEWEST":{"inland":275,"ocean":1075},"JACKSONVILLEEAST":{"inland":275,"ocean":1075},"JACKSONVILLE":{"inland":265,"ocean":1075},"JACKSON":{"inland":425,"ocean":1075},"IONIA":{"inland":650,"ocean":1075},"INDIANAPOLIS":{"inland":600,"ocean":1075},"HUNTSVILLE":{"inland":450,"ocean":1075},"HOUSTON-NORTH":{"inland":200,"ocean":1200},"HOUSTONEAST":{"inland":230,"ocean":1200},"HOUSTON":{"inland":200,"ocean":1200},"HONOLULU":{"inland":1690,"ocean":1775},"HIGHDESERT":{"inland":330,"ocean":1775},"HELENA":{"inland":1100,"ocean":1775},"HAYWARD":{"inland":450,"ocean":1775},"HATWARD":{"inland":1040,"ocean":1775},"HARTFORD-SOUTH":{"inland":275,"ocean":1075},"HARTFORDCITY":{"inland":250,"ocean":1075},"HARTFORD":{"inland":275,"ocean":1075},"HARRISONBURGAUTOAUCTION":{"inland":350,"ocean":1075},"HARRISBURG":{"inland":315,"ocean":1075},"HAMPTON,VA":{"inland":395,"ocean":1075},"HAMMOND":{"inland":600,"ocean":1075},"GULFPORT":{"inland":400,"ocean":1075},"GULFCOAST":{"inland":400,"ocean":1075},"GRENADA":{"inland":475,"ocean":1075},"GREER":{"inland":325,"ocean":1075},"GREENVILLE":{"inland":300,"ocean":1075},"GREENSBORO":{"inland":325,"ocean":1075},"GREATERAUTOAUCTIONPHOENIX":{"inland":375,"ocean":1775},"GRANTVILLE":{"inland":300,"ocean":1075},"GRANDISLAND":{"inland":700,"ocean":1075},"GRAHAM":{"inland":600,"ocean":1775},"GR.RAPIDS":{"inland":650,"ocean":1075},"GOLDENGATE":{"inland":350,"ocean":1775},"GLASSBOROWEST":{"inland":250,"ocean":1075},"GLASSBOROEAST":{"inland":250,"ocean":1075},"FT.LAUDERDALE":{"inland":350,"ocean":1075},"FT.WORTH":{"inland":350,"ocean":1200},"FT.PIERCE":{"inland":395,"ocean":1075},"FRESNO":{"inland":400,"ocean":1775},"FREMONT":{"inland":450,"ocean":1775},"FREETOWN":{"inland":390,"ocean":1075},"FREDERICKSBURG-SOUTH":{"inland":375,"ocean":1075},"FOUROAKS,NC":{"inland":250,"ocean":1075},"FORTWORTHNORTH":{"inland":325,"ocean":1200},"FORTWAYNE":{"inland":580,"ocean":1075},"FONTANA":{"inland":230,"ocean":1775},"FORTMYERS":{"inland":350,"ocean":1075},"FLORENCE":{"inland":475,"ocean":1075},"FLINT":{"inland":600,"ocean":1075},"FAYETTEVILLE":{"inland":500,"ocean":1075},"FARGO":{"inland":1100,"ocean":1075},"EXETER":{"inland":390,"ocean":1075},"EUGENE":{"inland":690,"ocean":1775},"ESSEX":{"inland":350,"ocean":1075},"ERIE":{"inland":525,"ocean":1075},"ENGLISHTOWN":{"inland":220,"ocean":1075},"ELDRIDGE":{"inland":675,"ocean":1075},"ELPASO":{"inland":450,"ocean":1200},"EASTNC":{"inland":400,"ocean":1075},"EASTBAY":{"inland":450,"ocean":1775},"EARLINGTON":{"inland":675,"ocean":1075},"DYER":{"inland":690,"ocean":1075},"DUNDALK":{"inland":325,"ocean":1075},"DOTHAN":{"inland":390,"ocean":1075},"DETROIT":{"inland":575,"ocean":1075},"DESMOINES":{"inland":650,"ocean":1075},"DENVERSOUTH":{"inland":700,"ocean":1200},"DENVER":{"inland":700,"ocean":1200},"DEFUNIAKSPRINGS":{"inland":350,"ocean":1075},"DAYTON":{"inland":575,"ocean":1075},"DAVENPORT":{"inland":650,"ocean":1075},"DANVILLE":{"inland":425,"ocean":1075},"DALLASSOUTH":{"inland":325,"ocean":1200},"DALLAS":{"inland":350,"ocean":1200},"CULPEPER,VA":{"inland":390,"ocean":1075},"CORPUSCHRISTI":{"inland":325,"ocean":1200},"CONCORD":{"inland":325,"ocean":1075},"COLUMBUSOH":{"inland":580,"ocean":1075},"COLUMBUSAL":{"inland":450,"ocean":1075},"COLUMBIASC":{"inland":300,"ocean":1075},"COLUMBIAMO":{"inland":650,"ocean":1075},"COLORADOSPRINGS":{"inland":675,"ocean":1200},"CLINTON":{"inland":480,"ocean":1075},"CLEVELANDWEST":{"inland":525,"ocean":1075},"CLEVELANDEAST":{"inland":525,"ocean":1075},"CLEVELAND":{"inland":575,"ocean":1075},"CLEARWATER":{"inland":325,"ocean":1075},"CLAYTON":{"inland":325,"ocean":1075},"CINCINNATI":{"inland":590,"ocean":1075},"CICERO":{"inland":575,"ocean":1075},"CHINAGROVE":{"inland":325,"ocean":1075},"CHICAGOWEST":{"inland":610,"ocean":1075},"CHICAGOSOUTH":{"inland":610,"ocean":1075},"CHICAGONORTH":{"inland":610,"ocean":1075},"CHATTANOOGA":{"inland":475,"ocean":1075},"CHARLOTTE":{"inland":325,"ocean":1075},"CHARLESTON-WV":{"inland":625,"ocean":1075},"CHARLESTON-SC":{"inland":325,"ocean":1075},"CHAMBERSBURG":{"inland":390,"ocean":1075},"CENTRALNEWJERSEY":{"inland":225,"ocean":1075},"CENTRALAUTOAUCTION":{"inland":170,"ocean":1075},"CASPER":{"inland":1250,"ocean":1775},"CARTERSVILLE":{"inland":350,"ocean":1075},"CANDIA":{"inland":425,"ocean":1075},"BURLINGTON":{"inland":525,"ocean":1075},"BUFFALO":{"inland":550,"ocean":1075},"BUCKHANNON":{"inland":625,"ocean":1075},"BRIDGEVIEW":{"inland":190,"ocean":1075},"BRIDGEPORT":{"inland":270,"ocean":1075},"BOWLIMGGREEN":{"inland":500,"ocean":1075},"BOSTON-SHIRLEY":{"inland":425,"ocean":1075},"BOSTON":{"inland":425,"ocean":1075},"BOISE":{"inland":550,"ocean":1775},"BIRMINGHAM":{"inland":425,"ocean":1075},"BILLINGS":{"inland":850,"ocean":1775},"BEL-AIRAUTOAUCTION":{"inland":425,"ocean":1075},"BAYAREA":{"inland":350,"ocean":1775},"BATONROUGE":{"inland":390,"ocean":1200},"BANGOR":{"inland":425,"ocean":1075},"BALTIMOR":{"inland":350,"ocean":1075},"BAKERSFIELD":{"inland":350,"ocean":1775},"AVENELNEWJERSEY":{"inland":190,"ocean":1075},"AUSTIN":{"inland":300,"ocean":1200},"AUGUSTA":{"inland":300,"ocean":1075},"ATLANTAWEST":{"inland":325,"ocean":1075},"ATLANTASOUTH":{"inland":350,"ocean":1075},"ATLANTANORTH":{"inland":350,"ocean":1075},"ATLANTAEAST":{"inland":325,"ocean":1075},"ATLANTAAUTOAUCTION":{"inland":325,"ocean":1075},"ASHLAND":{"inland":590,"ocean":1075},"ASHEVILLE":{"inland":425,"ocean":1075},"ARIZONAAUTOAUCTION":{"inland":400,"ocean":1775},"APPLETON":{"inland":600,"ocean":1075},"ANTELOPE":{"inland":425,"ocean":1775},"ANDREWS":{"inland":425,"ocean":1200},"ANCHORAGE":{"inland":2950,"ocean":1775},"ANAHEIM":{"inland":250,"ocean":1775},"AMARILLO":{"inland":525,"ocean":1200},"ALTOONA":{"inland":475,"ocean":1075},"ALBUQUERQUE":{"inland":650,"ocean":1200},"ALBANY":{"inland":370,"ocean":1075},"AKRON-CANTON":{"inland":600,"ocean":1075},"ADESAPA":{"inland":300,"ocean":1075},"ADAMSBURG":{"inland":450,"ocean":1075},"ABILENE":{"inland":400,"ocean":1200},"ADESAWISCONSIN":{"inland":300,"ocean":1075},"ADESASIOUXFALLS":{"inland":600,"ocean":1775},"ADESANEWJERSEY":{"inland":200,"ocean":1075},"ADESAGREATLAKES":{"inland":575,"ocean":1075},"ADESABOSTON":{"inland":425,"ocean":1075},"ACE-PERRIS":{"inland":290,"ocean":1775},"ACE-CARSON":{"inland":225,"ocean":1775}},"SUV":{"ACE-CARSON":{"inland":225,"ocean":2275},"ACE-PERRIS":{"inland":290,"ocean":2275},"ADESABOSTON":{"inland":425,"ocean":1375},"ADESAGREATLAKES":{"inland":575,"ocean":1375},"ADESANEWJERSEY":{"inland":200,"ocean":1375},"ADESASIOUXFALLS":{"inland":600,"ocean":2275},"ADESAWISCONSIN":{"inland":300,"ocean":1375},"ABILENE":{"inland":400,"ocean":1500},"ADAMSBURG":{"inland":450,"ocean":1375},"ADESAPA":{"inland":300,"ocean":1375},"AKRON-CANTON":{"inland":600,"ocean":1375},"ALBANY":{"inland":370,"ocean":1375},"ALBUQUERQUE":{"inland":650,"ocean":1500},"ALTOONA":{"inland":475,"ocean":1375},"AMARILLO":{"inland":525,"ocean":1500},"ANAHEIM":{"inland":250,"ocean":2275},"ANCHORAGE":{"inland":2950,"ocean":2275},"ANDREWS":{"inland":425,"ocean":1500},"ANTELOPE":{"inland":425,"ocean":2275},"APPLETON":{"inland":600,"ocean":1375},"ARIZONAAUTOAUCTION":{"inland":400,"ocean":2275},"ASHEVILLE":{"inland":425,"ocean":1375},"ASHLAND":{"inland":590,"ocean":1375},"ATLANTAAUTOAUCTION":{"inland":325,"ocean":1375},"ATLANTAEAST":{"inland":325,"ocean":1375},"ATLANTANORTH":{"inland":350,"ocean":1375},"ATLANTASOUTH":{"inland":350,"ocean":1375},"ATLANTAWEST":{"inland":325,"ocean":1375},"AUGUSTA":{"inland":300,"ocean":1375},"AUSTIN":{"inland":300,"ocean":1500},"AVENELNEWJERSEY":{"inland":190,"ocean":1375},"BAKERSFIELD":{"inland":350,"ocean":2275},"BALTIMOR":{"inland":350,"ocean":1375},"BANGOR":{"inland":425,"ocean":1375},"BATONROUGE":{"inland":390,"ocean":1500},"BAYAREA":{"inland":350,"ocean":2275},"BEL-AIRAUTOAUCTION":{"inland":425,"ocean":1375},"BILLINGS":{"inland":850,"ocean":2275},"BIRMINGHAM":{"inland":425,"ocean":1375},"BOISE":{"inland":550,"ocean":2275},"BOSTON":{"inland":425,"ocean":1375},"BOSTON-SHIRLEY":{"inland":425,"ocean":1375},"BOWLIMGGREEN":{"inland":500,"ocean":1375},"BRIDGEPORT":{"inland":270,"ocean":1375},"BRIDGEVIEW":{"inland":190,"ocean":1375},"BUCKHANNON":{"inland":625,"ocean":1375},"BUFFALO":{"inland":550,"ocean":1375},"BURLINGTON":{"inland":525,"ocean":1375},"CANDIA":{"inland":425,"ocean":1375},"CARTERSVILLE":{"inland":350,"ocean":1375},"CASPER":{"inland":1250,"ocean":2275},"CENTRALAUTOAUCTION":{"inland":170,"ocean":1375},"CENTRALNEWJERSEY":{"inland":225,"ocean":1375},"CHAMBERSBURG":{"inland":390,"ocean":1375},"CHARLESTON-SC":{"inland":325,"ocean":1375},"CHARLESTON-WV":{"inland":625,"ocean":1375},"CHARLOTTE":{"inland":325,"ocean":1375},"CHATTANOOGA":{"inland":475,"ocean":1375},"CHICAGONORTH":{"inland":610,"ocean":1375},"CHICAGOSOUTH":{"inland":610,"ocean":1375},"CHICAGOWEST":{"inland":610,"ocean":1375},"CHINAGROVE":{"inland":325,"ocean":1375},"CICERO":{"inland":575,"ocean":1375},"CINCINNATI":{"inland":590,"ocean":1375},"CLAYTON":{"inland":325,"ocean":1375},"CLEARWATER":{"inland":325,"ocean":1375},"CLEVELAND":{"inland":575,"ocean":1375},"CLEVELANDEAST":{"inland":525,"ocean":1375},"CLEVELANDWEST":{"inland":525,"ocean":1375},"CLINTON":{"inland":480,"ocean":1375},"COLORADOSPRINGS":{"inland":675,"ocean":1500},"COLUMBIAMO":{"inland":650,"ocean":1375},"COLUMBIASC":{"inland":300,"ocean":1375},"COLUMBUSAL":{"inland":450,"ocean":1375},"COLUMBUSOH":{"inland":580,"ocean":1375},"CONCORD":{"inland":325,"ocean":1375},"CORPUSCHRISTI":{"inland":325,"ocean":1500},"CULPEPER,VA":{"inland":390,"ocean":1375},"DALLAS":{"inland":350,"ocean":1500},"DALLASSOUTH":{"inland":325,"ocean":1500},"DANVILLE":{"inland":425,"ocean":1375},"DAVENPORT":{"inland":650,"ocean":1375},"DAYTON":{"inland":575,"ocean":1375},"DEFUNIAKSPRINGS":{"inland":350,"ocean":1375},"DENVER":{"inland":700,"ocean":1500},"DENVERSOUTH":{"inland":700,"ocean":1500},"DESMOINES":{"inland":650,"ocean":1375},"DETROIT":{"inland":575,"ocean":1375},"DOTHAN":{"inland":390,"ocean":1375},"DUNDALK":{"inland":325,"ocean":1375},"DYER":{"inland":690,"ocean":1375},"EARLINGTON":{"inland":675,"ocean":1375},"EASTBAY":{"inland":450,"ocean":2275},"EASTNC":{"inland":400,"ocean":1375},"ELPASO":{"inland":450,"ocean":1500},"ELDRIDGE":{"inland":675,"ocean":1375},"ENGLISHTOWN":{"inland":220,"ocean":1375},"ERIE":{"inland":525,"ocean":1375},"ESSEX":{"inland":350,"ocean":1375},"EUGENE":{"inland":690,"ocean":2275},"EXETER":{"inland":390,"ocean":1375},"FARGO":{"inland":1100,"ocean":1375},"FAYETTEVILLE":{"inland":500,"ocean":1375},"FLINT":{"inland":600,"ocean":1375},"FLORENCE":{"inland":475,"ocean":1375},"FONTANA":{"inland":230,"ocean":2275},"FORTMYERS":{"inland":350,"ocean":1375},"FORTWAYNE":{"inland":580,"ocean":1375},"FORTWORTHNORTH":{"inland":325,"ocean":1500},"FOUROAKS,NC":{"inland":250,"ocean":1375},"FREDERICKSBURG-SOUTH":{"inland":375,"ocean":1375},"FREETOWN":{"inland":390,"ocean":1375},"FREMONT":{"inland":450,"ocean":2275},"FRESNO":{"inland":400,"ocean":2275},"FT.PIERCE":{"inland":395,"ocean":1375},"FT.WORTH":{"inland":350,"ocean":1500},"FT.LAUDERDALE":{"inland":350,"ocean":1375},"GLASSBOROEAST":{"inland":250,"ocean":1375},"GLASSBOROWEST":{"inland":250,"ocean":1375},"GOLDENGATE":{"inland":350,"ocean":2275},"GR.RAPIDS":{"inland":650,"ocean":1375},"GRAHAM":{"inland":600,"ocean":2275},"GRANDISLAND":{"inland":700,"ocean":1375},"GRANTVILLE":{"inland":300,"ocean":1375},"GREATERAUTOAUCTIONPHOENIX":{"inland":375,"ocean":2275},"GREENSBORO":{"inland":325,"ocean":1375},"GREENVILLE":{"inland":300,"ocean":1375},"GREER":{"inland":325,"ocean":1375},"GRENADA":{"inland":475,"ocean":1375},"GULFCOAST":{"inland":400,"ocean":1375},"GULFPORT":{"inland":400,"ocean":1375},"HAMMOND":{"inland":600,"ocean":1375},"HAMPTON,VA":{"inland":395,"ocean":1375},"HARRISBURG":{"inland":315,"ocean":1375},"HARRISONBURGAUTOAUCTION":{"inland":350,"ocean":1375},"HARTFORD":{"inland":275,"ocean":1375},"HARTFORDCITY":{"inland":250,"ocean":1375},"HARTFORD-SOUTH":{"inland":275,"ocean":1375},"HATWARD":{"inland":1040,"ocean":2275},"HAYWARD":{"inland":450,"ocean":2275},"HELENA":{"inland":1100,"ocean":2275},"HIGHDESERT":{"inland":330,"ocean":2275},"HONOLULU":{"inland":1690,"ocean":2275},"HOUSTON":{"inland":200,"ocean":1500},"HOUSTONEAST":{"inland":230,"ocean":1500},"HOUSTON-NORTH":{"inland":200,"ocean":1500},"HUNTSVILLE":{"inland":450,"ocean":1375},"INDIANAPOLIS":{"inland":600,"ocean":1375},"IONIA":{"inland":650,"ocean":1375},"JACKSON":{"inland":425,"ocean":1375},"JACKSONVILLE":{"inland":265,"ocean":1375},"JACKSONVILLEEAST":{"inland":275,"ocean":1375},"JACKSONVILLEWEST":{"inland":275,"ocean":1375},"KANSASCITY":{"inland":675,"ocean":1375},"KINCHELOE":{"inland":875,"ocean":1375},"KNOXVILLE":{"inland":450,"ocean":1375},"LAFAYETTE":{"inland":375,"ocean":1500},"LANSING":{"inland":680,"ocean":1375},"LASVEGAS":{"inland":370,"ocean":2275},"LAUREL":{"inland":325,"ocean":1375},"LEXINGTONEASTKY":{"inland":590,"ocean":1375},"LEXINGTONSC":{"inland":350,"ocean":1375},"LEXINGTONWESTKY":{"inland":590,"ocean":1375},"LINCOLN,IL":{"inland":690,"ocean":1375},"LINCOLN,NE":{"inland":690,"ocean":1375},"LITTLEROCK":{"inland":490,"ocean":1500},"LONGBEACH":{"inland":180,"ocean":2275},"LONGISLAND":{"inland":275,"ocean":1375},"LONGVIEW":{"inland":325,"ocean":1500},"LOSANGELES":{"inland":250,"ocean":2275},"LOSANGELES-ADESA":{"inland":250,"ocean":2275},"LOUISVILLE":{"inland":575,"ocean":1375},"LUBBOCK":{"inland":475,"ocean":1500},"LUFKIN":{"inland":325,"ocean":1500},"LUMBERTON":{"inland":325,"ocean":1375},"LYMAN":{"inland":450,"ocean":1375},"MCALLEN":{"inland":390,"ocean":1500},"MACON":{"inland":300,"ocean":1375},"MADISON":{"inland":690,"ocean":1375},"MADISONHEIGHTS":{"inland":420,"ocean":1375},"MADISONSOUTH":{"inland":720,"ocean":1375},"MANCHESTER":{"inland":400,"ocean":1375},"MARTINEZ":{"inland":425,"ocean":2275},"MEBANE":{"inland":350,"ocean":1375},"MEMPHIS":{"inland":500,"ocean":1375},"MENTONE":{"inland":225,"ocean":2075},"METRODC":{"inland":325,"ocean":1375},"MIAMI":{"inland":390,"ocean":1375},"MIAMICENTRAL":{"inland":390,"ocean":1375},"MIAMINORTH":{"inland":390,"ocean":1375},"MIAMISOUTH":{"inland":390,"ocean":1375},"MIDDLETOWN":{"inland":290,"ocean":1375},"MILWAUKEE":{"inland":630,"ocean":1375},"MINNEAPOLIS":{"inland":650,"ocean":1375},"MINNEAPOLIS/ST.PAUL":{"inland":650,"ocean":1375},"MINNEAPOLISNORTH":{"inland":650,"ocean":1375},"MISSOULA":{"inland":950,"ocean":2275},"MOBILE":{"inland":450,"ocean":1375},"MOCKSVILLE":{"inland":315,"ocean":1375},"MONTGOMERY":{"inland":450,"ocean":1375},"NAPA":{"inland":450,"ocean":2075},"NASHVILLE":{"inland":450,"ocean":1375},"NATIONALAUTODEALERSEXCHANGE":{"inland":150,"ocean":1375},"NEWCASTLE":{"inland":300,"ocean":1375},"NEWORLEANS":{"inland":450,"ocean":1500},"NEWBURGH":{"inland":275,"ocean":1375},"NORTHBOSTON":{"inland":375,"ocean":1375},"NORTHCHARLESTON-SC":{"inland":290,"ocean":1375},"NORTHHOLLYWOOD":{"inland":230,"ocean":2275},"NORTHSEATTLE":{"inland":500,"ocean":2275},"NORTHERNNEWJERSEY":{"inland":190,"ocean":1375},"NORTHERNVIRGINIA":{"inland":325,"ocean":1375},"OCALA":{"inland":325,"ocean":1375},"OGDEN":{"inland":550,"ocean":2275},"OKLAHOMACITY":{"inland":450,"ocean":1500},"OMAHA":{"inland":650,"ocean":1375},"ORLANDO":{"inland":400,"ocean":1375},"ORLANDONORTH":{"inland":400,"ocean":1375},"ORLANDOSOUTH":{"inland":400,"ocean":1375},"PADUCAH":{"inland":575,"ocean":1375},"PASCO":{"inland":575,"ocean":2275},"PENSACOLA":{"inland":425,"ocean":1375},"PEORIA":{"inland":590,"ocean":1375},"PERMIANBASIN":{"inland":475,"ocean":1500},"PHILADELPHIA":{"inland":250,"ocean":1375},"PHILADELPHIAEAST":{"inland":270,"ocean":1375},"PHOENIX":{"inland":390,"ocean":2275},"PITTSBURG":{"inland":450,"ocean":1375},"PITTSBURGHNORTH":{"inland":460,"ocean":1375},"PITTSBURGHSOUTH":{"inland":470,"ocean":1375},"PORTAGE":{"inland":975,"ocean":1375},"PORTLAND":{"inland":475,"ocean":2275},"PORTLAND-GORHAM":{"inland":475,"ocean":1375},"PORTLANDNORTH":{"inland":550,"ocean":2275},"PORTLANDSOUTH":{"inland":550,"ocean":2275},"PORTLANDWEST":{"inland":475,"ocean":2275},"PROVIDENCE":{"inland":475,"ocean":1375},"PULASKI":{"inland":425,"ocean":1375},"PUNTAGORDA":{"inland":350,"ocean":1375},"PUYALLUP":{"inland":490,"ocean":2275},"RALEIGH":{"inland":325,"ocean":1375},"RANCHOCUCAMONGA":{"inland":230,"ocean":2275},"RAPIDCITY":{"inland":1100,"ocean":1375},"REDDING":{"inland":750,"ocean":2275},"RENO":{"inland":550,"ocean":2275},"RICHMOND":{"inland":385,"ocean":1375},"RICHMONDEAST":{"inland":400,"ocean":1375},"RIVERSIDE":{"inland":230,"ocean":2275},"ROANOKE":{"inland":450,"ocean":1375},"ROCHESTER":{"inland":450,"ocean":1375},"ROSEDALE":{"inland":350,"ocean":1375},"RUTLAND":{"inland":500,"ocean":1375},"SACRAMENTO":{"inland":450,"ocean":2275},"SALISBURY":{"inland":350,"ocean":1375},"SALTLAKECITY":{"inland":650,"ocean":2275},"SANANTONIO":{"inland":335,"ocean":1500},"SANBERNARDINO":{"inland":250,"ocean":2275},"SANDIEGO":{"inland":290,"ocean":2275},"SANJOSE":{"inland":450,"ocean":2275},"SANTACLARITA":{"inland":260,"ocean":2075},"SARASOTA":{"inland":275,"ocean":1375},"SAVANNAH":{"inland":150,"ocean":1375},"SAYREVILLE":{"inland":200,"ocean":1375},"SCRANTON":{"inland":300,"ocean":1375},"SEAFORD":{"inland":350,"ocean":1375},"SEATTLE":{"inland":590,"ocean":2275},"SHADYSPRING,WV":{"inland":625,"ocean":1375},"SHREVEPORT":{"inland":350,"ocean":1500},"SIKESTON":{"inland":590,"ocean":1375},"SIOUXFALLS":{"inland":890,"ocean":1375},"SOSACRAMENTO":{"inland":450,"ocean":2275},"SOMERVILLE":{"inland":210,"ocean":1375},"SOUTHBEND":{"inland":575,"ocean":1375},"SOUTHBOSTON":{"inland":400,"ocean":1375},"SOUTHERNILLINOIS":{"inland":575,"ocean":1375},"SOUTHERNNEWJERSEY":{"inland":225,"ocean":1375},"SPARTANBURG":{"inland":300,"ocean":1375},"SPOKANE":{"inland":800,"ocean":2275},"SPRINGFIELD":{"inland":600,"ocean":1375},"ST.CLOUD":{"inland":700,"ocean":1375},"ST.LOUIS":{"inland":575,"ocean":1500},"SUFFOLK":{"inland":425,"ocean":1375},"SUNVALLEY":{"inland":230,"ocean":2275},"SYRACUSE":{"inland":375,"ocean":1375},"TOTALRESOURCEAUCCENTRLPENN":{"inland":300,"ocean":1375},"TALLAHASSEE":{"inland":325,"ocean":1375},"TAMPA":{"inland":325,"ocean":1375},"TAMPASOUTH":{"inland":325,"ocean":1375},"TANNER":{"inland":450,"ocean":1375},"TAUNTON":{"inland":375,"ocean":1375},"TEMPLETON":{"inland":375,"ocean":1375},"TIDEWATER":{"inland":350,"ocean":1375},"TIFTON":{"inland":300,"ocean":1375},"TRENTON":{"inland":230,"ocean":1375},"TUCSON":{"inland":420,"ocean":2275},"TULSA":{"inland":525,"ocean":1500},"VALLEJO":{"inland":500,"ocean":2275},"VANNUYS":{"inland":225,"ocean":2275},"WACO":{"inland":325,"ocean":1500},"WALTON":{"inland":550,"ocean":1375},"WASHINGTONDC":{"inland":325,"ocean":1375},"WAYLAND":{"inland":660,"ocean":1375},"WEBSTER":{"inland":450,"ocean":1375},"WESTPALMBEACH":{"inland":375,"ocean":1375},"WESTWARREN":{"inland":375,"ocean":1375},"WESTERNCOLORADO":{"inland":850,"ocean":2275},"WHEELING":{"inland":600,"ocean":1375},"WICHITA":{"inland":600,"ocean":1375},"WILMINGTON":{"inland":375,"ocean":1375},"WINDHAM":{"inland":490,"ocean":1375},"YORKHAVEN":{"inland":310,"ocean":1375},"YORKSPRINGS":{"inland":325,"ocean":1375}}}};
+const EV_SURCHARGE_USD = 220;
+const OFFSITE_USD = 80;
+const DELIVERY_MARKUP = 1.0; // no markup on inland/extra fees (markup applies only to ocean)
+const OCEAN_MARKUP_DEFAULT_PERCENT = 20; // default markup on ocean (Klaipeda & Poti)
+
+function clamp(n, min, max){
+  n = Number(n);
+  if(!Number.isFinite(n)) return min;
+  return Math.min(max, Math.max(min, n));
+}
+
+let oceanMarkupPercent = (function(){
+  const saved = Number(localStorage.getItem('autoest_ocean_markup_percent'));
+  if(Number.isFinite(saved)) return clamp(saved, 0, 100);
+  return OCEAN_MARKUP_DEFAULT_PERCENT;
+})();
+
+function oceanWithMarkup(base){
+  const v = Number(base) || 0;
+  return Math.round(v * (1 + oceanMarkupPercent/100));
+}
+
+function setOceanMarkupPercent(p){
+  oceanMarkupPercent = clamp(p, 0, 100);
+  try{ localStorage.setItem('autoest_ocean_markup_percent', String(oceanMarkupPercent)); }catch(_){}
+  const inp = document.getElementById('oceanMarkupPercent');
+  const rng = document.getElementById('oceanMarkupRange');
+  if(inp) inp.value = String(oceanMarkupPercent);
+  if(rng) rng.value = String(oceanMarkupPercent);
+  // recalc totals
+  if(typeof calc === 'function') calc();
+}
+
+(function bindOceanMarkupControls(){
+  const inp = document.getElementById('oceanMarkupPercent');
+  const rng = document.getElementById('oceanMarkupRange');
+  if(!inp || !rng) return;
+  // init UI
+  inp.value = String(oceanMarkupPercent);
+  rng.value = String(oceanMarkupPercent);
+
+  inp.addEventListener('input', ()=> setOceanMarkupPercent(inp.value));
+  rng.addEventListener('input', ()=> setOceanMarkupPercent(rng.value));
+})();
+
+
+const $ = (id)=>document.getElementById(id);
+function num(v){const x=Number(String(v??'').replace(',','.').replace(/\s+/g,'')); return Number.isFinite(x)?x:0;}
+function usd(x){return Math.round(x).toLocaleString('en-US')+' $';}
+function eur(x){return Math.round(x).toLocaleString('en-US')+' €';}
+function byn(x){return Math.round(x).toLocaleString('ru-RU')+' BYN';}
+function usdFromByn(bynAmount){const fx=num($('fxUsdByn')?.value||2.92); return (Number(bynAmount)||0)/fx;}
+function auctionFeeUSD(auctionKey, lotUSD){
+  const p = Math.max(0, Number(lotUSD)||0);
+  const key = (String(auctionKey||"COPART").toUpperCase().includes("IAAI")) ? "IAAI" : "COPART";
+
+  // Table-based model (westmotors-like): piecewise linear interpolation between control points.
+  // Control points are taken from your westmotors screenshots; this matches them exactly at those prices.
+  const TABLE = {
+    COPART: [
+      [0,    450],
+      [1000, 590],
+      [4000, 980],
+      [7000, 1155],
+      [8600, 1235],
+      [13000,1305],
+      [18000,1495],
+    ],
+    IAAI: [
+      [0,    420],
+      [1000, 545],
+      [4000, 935],
+      [7000, 1110],
+      [8600, 1190],
+      [13000,1260],
+      [18000,1450],
+    ]
+  };
+
+  const pts = TABLE[key];
+
+  function lerp(x, x0, y0, x1, y1){
+    if (x1 === x0) return y0;
+    return y0 + (y1 - y0) * ((x - x0) / (x1 - x0));
+  }
+
+  // find segment
+  let fee = pts[0][1];
+
+  if (p <= pts[0][0]) {
+    fee = pts[0][1];
+  } else if (p >= pts[pts.length-1][0]) {
+    // extrapolate using last segment slope
+    const [x0,y0] = pts[pts.length-2];
+    const [x1,y1] = pts[pts.length-1];
+    fee = lerp(p, x0,y0, x1,y1);
+  } else {
+    for (let i=0;i<pts.length-1;i++){
+      const [x0,y0] = pts[i];
+      const [x1,y1] = pts[i+1];
+      if (p >= x0 && p <= x1){
+        fee = lerp(p, x0,y0, x1,y1);
+        break;
+      }
+    }
+  }
+
+  return Math.round(fee);
+}
+
+const LS_MIN_K="AUTOEST_MIN_KLAIPEDA_EUR";
+const LS_MIN_P="AUTOEST_MIN_POTI_USD";
+const LS_FX_EUR_USD="AUTOEST_FX_EUR_USD";
+
+function loadMinskDefaults(){
+  $('minskK').value = localStorage.getItem(LS_MIN_K) ?? "1150";
+  $('minskP').value = localStorage.getItem(LS_MIN_P) ?? "2590";
+  if($('fxEurUsd')) $('fxEurUsd').value = localStorage.getItem(LS_FX_EUR_USD) ?? $('fxEurUsd').value;
+}
+function saveMinskDefaults(){
+  localStorage.setItem(LS_MIN_K, String(num($('minskK').value)));
+  localStorage.setItem(LS_MIN_P, String(num($('minskP').value)));
+  if($('fxEurUsd')) localStorage.setItem(LS_FX_EUR_USD, String(num($('fxEurUsd').value)));
+}
+
+// --------- Location label normalization + fast keyboard search ----------
+const US_STATE_CODES = new Set([
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI",
+  "MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT",
+  "VT","VA","WA","WV","WI","WY","DC"
+]);
+
+function titleCaseWord(w){
+  if(!w) return w;
+  const up = w.toUpperCase();
+  if(US_STATE_CODES.has(up)) return up;
+  if(up === "USA" || up === "US" || up === "EU" || up === "UAE") return up;
+  // Keep digits as-is, otherwise Title Case
+  if(/^[0-9]+$/.test(w)) return w;
+  const low = w.toLowerCase();
+  return low.charAt(0).toUpperCase() + low.slice(1);
+}
+
+function normalizeLocationLabel(raw){
+  if(raw == null) return "";
+  let s = String(raw).trim();
+  s = s.replace(/[_]+/g, " ");
+  s = s.replace(/\s+/g, " ");
+  // If it's all-caps (common in datasets), prettify it.
+  // Keep hyphens and slashes; normalize words around them.
+  const parts = s.split(/([\-\/])/g); // keep separators
+  const out = parts.map(p=>{
+    if(p === "-" || p === "/") return p;
+    return p.split(" ").map(titleCaseWord).join(" ");
+  }).join("");
+  return out.trim();
+}
+
+function attachSelectTypeahead(sel){
+  if(!sel) return;
+  let buf = "";
+  let t = null;
+
+  sel.addEventListener("keydown", (e)=>{
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = e.key;
+
+    // allow native navigation keys
+    if(k === "ArrowUp" || k === "ArrowDown" || k === "Home" || k === "End" || k === "PageUp" || k === "PageDown") return;
+
+    if(k === "Backspace"){
+      if(buf.length){
+        buf = buf.slice(0, -1);
+        e.preventDefault();
+      }
+    } else if(k.length === 1 && !/\s/.test(k) && /[0-9A-Za-zА-Яа-яЁё]/.test(k)){
+      buf += k;
+      e.preventDefault();
+    } else {
+      return;
+    }
+
+    clearTimeout(t);
+    t = setTimeout(()=>{ buf = ""; }, 600);
+
+    const q = buf.toLowerCase();
+    if(!q) return;
+
+    const opts = Array.from(sel.options);
+    const idx = opts.findIndex(o => (o.textContent || "").trim().toLowerCase().startsWith(q));
+    if(idx >= 0){
+      sel.selectedIndex = idx;
+      sel.dispatchEvent(new Event("change", {bubbles:true}));
+    }
+  });
+}
+
+function rebuildLocations(){
+  const port = $('destPort').value;
+  const typ  = $('vehicle').value;
+  const map = PRICE_DB?.[port]?.[typ] || {};
+  const locSel = $('location');
+  const prev = locSel.value;
+
+  // Keep original key for тарификация, but show normalized label and sort by it
+  const items = Object.keys(map).filter(Boolean).map(k=>({
+    key: k,
+    label: normalizeLocationLabel(k)
+  }));
+
+  items.sort((a,b)=> a.label.localeCompare(b.label, 'ru', {sensitivity:'base'}));
+
+  locSel.innerHTML = '';
+
+  if (!items.length){
+    const o=document.createElement('option');
+    o.value=''; o.textContent='Нет данных'; o.disabled=true; o.selected=true;
+    locSel.appendChild(o);
+    return;
+  }
+
+  for (const it of items){
+    const o=document.createElement('option');
+    o.value = it.key;
+    o.textContent = it.label || it.key;
+    locSel.appendChild(o);
+  }
+
+  const keys = items.map(x=>x.key);
+  locSel.value = keys.includes(prev) ? prev : keys[0];
+}
+
+function getRec(){
+  const port=$('destPort').value, typ=$('vehicle').value, loc=$('location').value;
+  return PRICE_DB?.[port]?.[typ]?.[loc] || null;
+}
+
+function renderMinskUI(){
+  const on = $('toMinsk').checked;
+  $('minskInputs').style.display = on ? '' : 'none';
+  $('rMinskRow').style.display = on ? 'flex' : 'none';
+  const port = $('destPort').value;
+  $('minskKWrap').style.display = (on && port==='KLAIPEDA') ? '' : 'none';
+  $('minskPWrap').style.display = (on && port==='POTI') ? '' : 'none';
+  $('rMinskLabel').textContent = (port==='POTI') ? 'Поти → Минск' : 'Клайпеда → Минск';
+}
+
+function status(found){
+  const ok=$('statusOk'), warn=$('statusWarn');
+  if(!ok || !warn) return;
+if(found){ ok.style.display=''; ok.textContent='✅ Тариф найден (из HAR).'; warn.style.display='none';}
+  else { warn.style.display=''; warn.textContent='⚠️ Нет тарифа по выбранной локации. Поменяйте локацию/тип/порт.'; ok.style.display='none';}
+}
+
+
+function calc(){
+  try{
+    _calcCore();
+  }catch(e){
+    // Fail-safe: don't break UI if some optional element was removed
+    try{
+      const lot = num($('lot')?.value);
+      if($('rLot')) $('rLot').textContent = usd(lot);
+      const auc = $('auction')?.value;
+      const aFee = auctionFeeUSD(auc, lot);
+      if($('rAuc')) $('rAuc').textContent = usd(aFee);
+    }catch(_){}
+    console.error('calc error', e);
+  }
+}
+
+function _calcCore(){
+  const lot = num($('lot').value);
+  $('rLot').textContent = usd(lot);
+
+  const auc = $('auction').value;
+  const aFee = auctionFeeUSD(auc, lot);
+  $('rAuc').textContent = usd(aFee);
+
+  const port = $('destPort').value;
+  $('pillRoute').textContent = (port==='POTI') ? 'Поти' : 'Клайпеда';
+  $('rOceanLabel').textContent = (port==='POTI') ? 'Порт → Поти' : 'Порт → Клайпеда';
+
+  if(!$('location').options.length || $('location').value==='') rebuildLocations();
+  // auto-pick first location so расчёт сразу считался
+  if($('location').value==='' && $('location').options.length){ $('location').selectedIndex = 0; }
+
+  const rec = getRec();
+  status(!!rec);
+  renderMinskUI();
+
+  const isEv = $('isEv').checked;
+  const isOffsite = $('isOffsite').checked;
+  $('rEvRow').style.display = isEv ? 'flex' : 'none';
+  $('rEv').textContent = isEv ? usd(EV_SURCHARGE_USD) : '—';
+  $('rOffsiteRow').style.display = isOffsite ? 'flex' : 'none';
+  $('rOffsite').textContent = isOffsite ? usd(OFFSITE_USD) : '—';
+
+  if(!rec){
+    // No tariff record -> cannot compute delivery/customs totals
+    $('rInland').textContent='—';
+    $('rOcean').textContent='—';
+    $('rTotal').textContent='—';
+    if($('rRbDuty')) $('rRbDuty').textContent='—';
+    if($('rRbFee'))  $('rRbFee').textContent='—';
+    if($('rRbUtil')) $('rRbUtil').textContent='—';
+    if($('rRbSvh'))  $('rRbSvh').textContent='—';
+    if($('rRbTotal')) $('rRbTotal').textContent='—';
+    if($('rGrand'))  $('rGrand').textContent='—';
+    window.__AUTOEST_LAST = null;
+    return;
+  }
+
+  $('rInland').textContent = usd(rec.inland);
+  $('rOcean').textContent  = usd(oceanWithMarkup(rec.ocean));
+
+  let addUsd=0;
+  if($('toMinsk').checked){
+    if(port==='KLAIPEDA'){
+      const addEur = num($('minskK').value);
+      const fxEurUsd = Math.max(0, num($('fxEurUsd')?.value || 1.08) || 0);
+      addUsd = addEur * (fxEurUsd || 0);
+      $('rMinsk').textContent = eur(addEur) + (fxEurUsd ? (' (' + usd(addUsd) + ')') : '');
+    } else {
+      addUsd = num($('minskP').value);
+      $('rMinsk').textContent = usd(addUsd);
+    }
+  }
+
+  const evAdd = isEv ? EV_SURCHARGE_USD : 0;
+  const offsiteAdd = isOffsite ? OFFSITE_USD : 0;
+
+  const serviceByn = 500;
+  const serviceUsd = usdFromByn(serviceByn);
+  if($('rService')) $('rService').textContent = usd(serviceUsd) + ' (' + byn(serviceByn) + ')';
+  const inlandUsd = rec.inland;
+  const oceanUsd  = oceanWithMarkup(rec.ocean);
+  const usdPart = lot + aFee + inlandUsd + oceanUsd + addUsd + evAdd + offsiteAdd + serviceUsd;
+  $('rTotal').textContent = usd(usdPart);
+  // expose numeric parts for RB customs block
+  window.__AUTOEST_LAST = {
+    lotUSD: lot,
+    aucFeeUSD: aFee,
+    inlandUSD: rec ? rec.inland : 0,
+    oceanUSD: rec ? oceanWithMarkup(rec.ocean) : 0,
+    evAddUSD: evAdd,
+    addUsd: addUsd,
+    serviceUsd: usdFromByn(500),
+    port: port,
+    deliveryUsd: lot + aFee + (rec?rec.inland:0) + (rec?oceanWithMarkup(rec.ocean):0) + addUsd + evAdd + offsiteAdd + usdFromByn(500)
+  };
+  rbCalc();
+
+}
+
+function copyForClient(){
+  const lot = num($('lot').value);
+  const auc = $('auction').value;
+  const aFee = auctionFeeUSD(auc, lot);
+  if(!$('location').options.length || $('location').value==='') rebuildLocations();
+  const rec = getRec();
+  if(!rec){alert('Нет тарифа по выбранной локации.'); return;}
+
+  const typLabel = ($('vehicle').value==='SEDAN') ? 'Седан' : 'Кроссовер / SUV';
+  const port = $('destPort').value;
+  const routeLabel = (port==='POTI') ? 'Поти' : 'Клайпеда';
+  const loc = $('location').value;
+  const isEv = $('isEv').checked;
+  const isOffsite = $('isOffsite').checked;
+
+  const lines=[];
+  lines.push('Расчёт ('+auc+')');
+  lines.push('Тип: '+typLabel + (isEv ? ' (Электро/гибрид)' : '') + (isOffsite ? ' (Offsite)' : ''));
+  lines.push('Локация: '+loc);
+  lines.push('Маршрут: '+routeLabel);
+  lines.push('');
+  lines.push('Стоимость авто: '+usd(lot));
+  lines.push('Аукционный сбор: '+usd(aFee));
+  if(isOffsite) lines.push('Offsite: '+usd(OFFSITE_USD));
+  lines.push('Площадка → порт США: '+usd(rec.inland));
+  lines.push((port==='POTI'?'Порт → Поти: ':'Порт → Клайпеда: ')+usd(oceanWithMarkup(rec.ocean)));
+  if(isEv) lines.push('Доплата (Электро/гибрид): '+usd(EV_SURCHARGE_USD));
+
+  if($('toMinsk').checked){
+    if(port==='KLAIPEDA'){
+      const addEur = num($('minskK').value);
+      const fxEurUsd = Math.max(0, num($('fxEurUsd')?.value || 1.08) || 0);
+      const addUsd = addEur * (fxEurUsd || 0);
+      lines.push('Клайпеда → Минск: '+eur(addEur) + (fxEurUsd ? (' ('+usd(addUsd)+')') : ''));
+    } else {
+      lines.push('Поти → Минск: '+usd(num($('minskP').value)));
+    }
+  }
+
+  lines.push('Услуги компании: '+byn(500));
+  lines.push('');
+  lines.push('Итого: '+$('rTotal').textContent);
+
+  const text=lines.join('\n');
+  navigator.clipboard.writeText(text).then(()=>{
+    $('copyBtn').textContent='✅ Скопировано';
+    setTimeout(()=>$('copyBtn').textContent='Скопировать для клиента',1200);
+  }).catch(()=>{
+    const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    $('copyBtn').textContent='✅ Скопировано';
+    setTimeout(()=>$('copyBtn').textContent='Скопировать для клиента',1200);
+  });
+}
+
+function bind(){
+
+  $('vehicle').addEventListener('change', ()=>{rebuildLocations(); calc();});
+  $('destPort').addEventListener('change', ()=>{rebuildLocations(); calc();});
+  $('location').addEventListener('change', calc);
+  $('lot').addEventListener('input', calc);
+  $('auction').addEventListener('change', calc);
+  $('isEv').addEventListener('change', calc);
+  $('isOffsite').addEventListener('change', calc);
+
+  $('toMinsk').addEventListener('change', ()=>{renderMinskUI(); calc();});
+  $('minskK').addEventListener('input', ()=>{saveMinskDefaults(); calc();});
+  if($('fxEurUsd')) $('fxEurUsd').addEventListener('input', ()=>{saveMinskDefaults(); calc();});
+  $('minskP').addEventListener('input', ()=>{saveMinskDefaults(); calc();});
+
+  $('copyBtn').addEventListener('click', copyForClient)
+  // RB customs listeners
+  $('rbPrefer').addEventListener('change', ()=>{ fxSave(); rbCalc(); });
+  $('rbAge').addEventListener('change', ()=>{ fxSave(); rbCalc(); });
+  $('rbEngine').addEventListener('change', ()=>{ fxSave(); rbCalc(); });
+  $('rbCC').addEventListener('input', ()=>{ fxSave(); rbCalc(); });
+  if($('fxUsdByn')) $('fxUsdByn').addEventListener('input', ()=>{ fxSave(); rbCalc(); });
+}
+
+
+
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  loadMinskDefaults();
+  fxLoad();
+  rebuildLocations();
+  attachSelectTypeahead($('location'));
+  bind();
+  calc();
+  setTimeout(()=>{ if($('location').value==='') rebuildLocations(); calc(); }, 50);
+});
+
+// ---------------- RB CUSTOMS (Belarus) ----------------
+const LS_FX_USD_BYN = "AUTOEST_FX_USD_BYN";
+const LS_RB_PREF    = "AUTOEST_RB_PREF";
+const LS_RB_AGE     = "AUTOEST_RB_AGE";
+const LS_RB_ENGINE  = "AUTOEST_RB_ENGINE";
+const LS_RB_CC      = "AUTOEST_RB_CC";
+const LS_RB_DUTY_MAN= "AUTOEST_RB_DUTY_MAN_USD";
+
+// Таблица ставок (логика как у конкурентов для физлиц):
+// - до 3 лет: % от цены авто, но не менее X $/см³ (пороговые значения цены)
+// - 3–5 лет: фикс $/см³ по диапазонам объёма
+// - >5 лет: фикс $/см³ по диапазонам объёма
+const RB_LE3_BRACKETS = [
+  { maxValue:  8500, percent: 0.54, minPerCC:  2.5 },
+  { maxValue: 16700, percent: 0.48, minPerCC:  3.5 },
+  { maxValue: 42300, percent: 0.48, minPerCC:  5.5 },
+  { maxValue: 84500, percent: 0.48, minPerCC:  7.5 },
+  { maxValue:169000, percent: 0.48, minPerCC: 15.0 },
+  { maxValue: Infinity, percent: 0.48, minPerCC: 20.0 },
+];
+
+const RB_35_RATES = [
+  { maxCC: 1000, rate: 1.5 },
+  { maxCC: 1500, rate: 1.7 },
+  { maxCC: 1800, rate: 2.5 },
+  { maxCC: 2300, rate: 2.7 },
+  { maxCC: 3000, rate: 3.0 },
+  { maxCC: Infinity, rate: 3.6 },
+];
+
+const RB_GT5_RATES = [
+  { maxCC: 1000, rate: 3.0 },
+  { maxCC: 1500, rate: 3.2 },
+  { maxCC: 1800, rate: 3.5 },
+  { maxCC: 2300, rate: 4.8 },
+  { maxCC: 3000, rate: 5.0 },
+  { maxCC: Infinity, rate: 5.7 },
+];
+
+function fxLoad(){
+  if(!$('fxUsdByn')) return;
+  $('fxUsdByn').value = localStorage.getItem(LS_FX_USD_BYN) ?? $('fxUsdByn').value;
+  $('rbPrefer').checked = (localStorage.getItem(LS_RB_PREF) ?? "0") === "1";
+  $('rbAge').value = localStorage.getItem(LS_RB_AGE) ?? $('rbAge').value;
+  $('rbEngine').value = localStorage.getItem(LS_RB_ENGINE) ?? $('rbEngine').value;
+  $('rbCC').value = localStorage.getItem(LS_RB_CC) ?? $('rbCC').value;
+}
+
+function fxSave(){
+  if(!$('fxUsdByn')) return;
+  localStorage.setItem(LS_FX_USD_BYN, String(num($('fxUsdByn').value)));
+  localStorage.setItem(LS_RB_PREF, $('rbPrefer').checked ? "1" : "0");
+  localStorage.setItem(LS_RB_AGE, String(num($('rbAge').value)));
+  localStorage.setItem(LS_RB_ENGINE, $('rbEngine').value);
+  localStorage.setItem(LS_RB_CC, String(num($('rbCC').value)));
+}
+
+
+function rateByCC(cc, table){
+  const v = Math.max(0, num(cc));
+  for(const row of table){
+    if(v <= row.maxCC) return row.rate;
+  }
+  return table[table.length-1].rate;
+}
+
+function dutyTableUSD(age, cc, valueUsd){
+  const a = Math.max(0, Math.round(num(age)));
+  const vol = Math.max(0, num(cc));
+  const val = Math.max(0, num(valueUsd));
+  if(vol <= 0) return 0;
+
+  if(a < 3){
+    const b = RB_LE3_BRACKETS.find(x => val <= x.maxValue) || RB_LE3_BRACKETS[RB_LE3_BRACKETS.length-1];
+    const byPercent = b.percent * val;
+    const byMin = b.minPerCC * vol;
+    return Math.round(Math.max(byPercent, byMin));
+  }
+  if(a <= 5){
+    return Math.round(rateByCC(vol, RB_35_RATES) * vol);
+  }
+  return Math.round(rateByCC(vol, RB_GT5_RATES) * vol);
+}
+
+function rbDefaultUtilByAge(age){
+  // Утильсбор (физлицо, РБ): <3 лет — 545 BYN, >=3 лет — 1089 BYN
+  const a = Math.max(0, Math.round(num(age)));
+  return (a < 3) ? 545 : 1089;
+}
+
+function rbCalc(){
+  const st = window.__AUTOEST_LAST || null;
+  if(!st || !Number.isFinite(st.deliveryUsd)){
+    if($('rRbDuty')) $('rRbDuty').textContent='—';
+    if($('rRbFee'))  $('rRbFee').textContent='—';
+    if($('rRbUtil')) $('rRbUtil').textContent='—';
+    if($('rRbSvh'))  $('rRbSvh').textContent='—';
+    if($('rRbTotal')) $('rRbTotal').textContent='—';
+    if($('rGrand'))  $('rGrand').textContent='—';
+    return;
+  }
+
+  // Customs section is always enabled
+  const usdByn = Math.max(0, num($('fxUsdByn').value) || 0);
+
+  // delivery in USD (from main calc)
+  const deliveryUsd = st ? (st.deliveryUsd!=null ? st.deliveryUsd : (st.lotUSD + st.aucFeeUSD + st.inlandUSD + st.oceanUSD + st.evAddUSD + (st.addUsd||0) + (st.serviceUsd||0))) : 0;
+
+  // car price for duty base: стоимость авто + аукционный сбор
+  const valueUsd = st ? (st.lotUSD + st.aucFeeUSD) : 0;
+  const engine = $('rbEngine').value;
+  const age = num($('rbAge').value);
+  const cc = (engine === "EV") ? 0 : num($('rbCC').value);
+
+  let dutyUsd = 0;
+  if(engine === "EV"){
+    dutyUsd = 0;
+  } else {
+    dutyUsd = dutyTableUSD(age, cc, valueUsd);
+  }
+
+  // preferential: -50% duty only
+  if($('rbPrefer').checked){
+    dutyUsd = dutyUsd * 0.5;
+  }
+
+  // Fixed/automatic BYN fees (no inputs in UI)
+  const feeByn  = 120;                 // таможенный сбор
+  const utilByn = rbDefaultUtilByAge(age); // утильсбор
+  const svhByn  = 650;                 // СВХ по умолчанию
+
+  const feeUsd  = usdByn ? (feeByn / usdByn) : 0;
+  const utilUsd = usdByn ? (utilByn / usdByn) : 0;
+  const svhUsd  = usdByn ? (svhByn / usdByn) : 0;
+
+  const customsTotalUsd = dutyUsd + feeUsd + utilUsd + svhUsd;
+
+  const grandUsd = deliveryUsd + customsTotalUsd;
+
+  // render (USD everywhere)
+  $('rRbDuty').textContent  = usd(dutyUsd);
+  $('rRbFee').textContent   = usd(feeUsd) + ' (' + byn(feeByn) + ')';
+  $('rRbUtil').textContent  = usd(utilUsd) + ' (' + byn(utilByn) + ')';
+  $('rRbSvh').textContent   = usd(svhUsd) + ' (' + byn(svhByn) + ')';
+  if($('rRbTotal')) $('rRbTotal').textContent = usd(customsTotalUsd);
+  $('rGrand').textContent   = usd(grandUsd);
+
+  $('rbCC').disabled = (engine === "EV");
+  $('rbCC').style.opacity = (engine === "EV") ? '0.6' : '1';
+}
+// -------------- /RB CUSTOMS ----------------
+
+
+
+</script>
+</body>
+</html>
